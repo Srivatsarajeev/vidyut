@@ -24,12 +24,12 @@ def home():
 @app.get("/history")
 def get_history():
     return [
-        {"time": "00:00", "usage": 110},
-        {"time": "04:00", "usage": 95},
-        {"time": "08:00", "usage": 140},
-        {"time": "12:00", "usage": 165},
-        {"time": "16:00", "usage": 155},
-        {"time": "20:00", "usage": 180},
+        {"time": "00:00", "usage": 40},
+        {"time": "04:00", "usage": 30},
+        {"time": "08:00", "usage": 150},
+        {"time": "12:00", "usage": 100},
+        {"time": "16:00", "usage": 80},
+        {"time": "20:00", "usage": 190},
     ]
 
 @app.get("/predict")

@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Energy Usage (kWh)',
+                    label: 'Energy Usage (Watts)',
                     data: usageData,
                     borderColor: '#3b82f6',
                     backgroundColor: gradient,
@@ -69,11 +69,11 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(err => {
             console.warn("Backend not running, using mock history data", err);
             const mockData = [
-                { time: "00:00", usage: 100 },
-                { time: "04:00", usage: 80 },
-                { time: "08:00", usage: 130 },
-                { time: "12:00", usage: 180 },
-                { time: "16:00", usage: 160 },
+                { time: "00:00", usage: 40 },
+                { time: "04:00", usage: 30 },
+                { time: "08:00", usage: 150 },
+                { time: "12:00", usage: 100 },
+                { time: "16:00", usage: 80 },
                 { time: "20:00", usage: 190 },
             ];
             initChart(mockData);

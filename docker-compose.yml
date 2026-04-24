@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  vidyut-cloud:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - ./model:/app/model
+    environment:
+      - PYTHONUNBUFFERED=1
