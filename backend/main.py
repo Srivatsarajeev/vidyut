@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import pickle
 import numpy as np
 
@@ -16,7 +17,7 @@ app.add_middleware(
 # Load model
 model = pickle.load(open("../model/model.pkl", "rb"))
 
-@app.get("/")
+@app.get("/api")
 def home():
     return {"message": "Vidyut API Running ⚡"}
 
@@ -48,3 +49,5 @@ def predict(temperature: float, humidity: float, appliance_usage: float):
         "predicted_energy_consumption": round(prediction, 2),
         "usage_level": level
     }
+
+app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")

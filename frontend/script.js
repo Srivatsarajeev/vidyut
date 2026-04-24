@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Fetch history data from API
-    fetch('http://127.0.0.1:8000/history')
+    fetch('http://127.0.0.1:8001/history')
         .then(response => response.json())
         .then(data => initChart(data))
         .catch(err => {
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         predictBtn.disabled = true;
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000/predict?temperature=${temp}&humidity=${hum}&appliance_usage=${app}`);
+            const response = await fetch(`http://127.0.0.1:8001/predict?temperature=${temp}&humidity=${hum}&appliance_usage=${app}`);
             
             if (response.ok) {
                 const data = await response.json();
@@ -134,11 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     predLevel.classList.add('badge-low');
                 }
             } else {
-                alert("Error getting prediction from server");
+            alert("Error getting prediction from server");
             }
         } catch (error) {
             console.error(error);
-            alert("Could not connect to backend. Make sure FastAPI is running on port 8000.");
+            alert("Could not connect to backend. Make sure FastAPI is running on port 8001.");
         } finally {
             // Restore button
             predictBtn.innerHTML = `Predict Energy <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
