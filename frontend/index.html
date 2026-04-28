@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidyut Dashboard - Energy Analytics</title>
+    <title>Vidyut Cloud - Energy Analytics</title>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -18,25 +18,26 @@
                 <span class="logo-icon">⚡</span>
                 <h2>Vidyut</h2>
             </div>
+            
             <nav class="nav-menu">
                 <a href="#" class="nav-item active">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                    Dashboard
+                    <span>Dashboard</span>
                 </a>
                 <a href="#" class="nav-item">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                    Analytics
+                    <span>Analytics</span>
                 </a>
                 <a href="#" class="nav-item">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                    Settings
+                    <span>Settings</span>
                 </a>
             </nav>
-            <div class="user-profile">
-                <div class="avatar">P</div>
-                <div class="user-info">
-                    <h4>Pavithra H D</h4>
-                    <p>RR No: K2D88786</p>
+
+            <div class="sidebar-footer">
+                <div class="cloud-status">
+                    <div class="dot"></div>
+                    <span>Cloud Sync Active</span>
                 </div>
             </div>
         </aside>
@@ -46,92 +47,111 @@
             <header>
                 <div>
                     <h1>Overview</h1>
-                    <p class="subtitle">Cloud Platform for Energy Analytics</p>
+                    <p class="subtitle">Intelligent Energy Management</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-outline">Export Data</button>
-                    <button class="btn btn-primary">Generate Report</button>
+                    <button class="btn btn-outline">Export</button>
+                    <button class="btn btn-primary">Reports</button>
                 </div>
             </header>
 
             <!-- Stats Row -->
-            <div class="stats-grid">
+            <div class="stats-grid" id="stats-grid">
+                <!-- No Data Overlay -->
+                <div class="no-data-overlay" id="stats-overlay">
+                    <div class="no-data-icon">📊</div>
+                    <h3>No Bill Data</h3>
+                    <p class="no-data-text">Upload your electricity bill to see consumption and cost analysis.</p>
+                </div>
+
                 <div class="stat-card glass-panel">
-                    <div class="stat-icon pulse">⚡</div>
-                    <div class="stat-details">
-                        <h3>Total Consumption</h3>
-                        <p class="stat-value">71 <span class="unit">kWh</span></p>
-                        <p class="stat-change neutral">11/03/2026 - 11/04/2026</p>
-                    </div>
+                    <h3>Total Consumption</h3>
+                    <p class="stat-value"><span id="stat-consumption">--</span> <span class="unit">kWh</span></p>
+                    <p class="stat-change" id="stat-period">Waiting for upload...</p>
                 </div>
                 <div class="stat-card glass-panel">
-                    <div class="stat-icon">💰</div>
-                    <div class="stat-details">
-                        <h3>Net Payable</h3>
-                        <p class="stat-value">₹93 <span class="unit"></span></p>
-                        <p class="stat-change neutral">Due Date: 25/04/2026</p>
-                    </div>
+                    <h3>Net Payable</h3>
+                    <p class="stat-value">₹<span id="stat-cost">--</span></p>
+                    <p class="stat-change" id="stat-due">---</p>
                 </div>
                 <div class="stat-card glass-panel">
-                    <div class="stat-icon">🏛️</div>
-                    <div class="stat-details">
-                        <h3>Govt Subsidy</h3>
-                        <p class="stat-value">₹559.82 <span class="unit"></span></p>
-                        <p class="stat-change positive">Gruha Jyothi Scheme</p>
-                    </div>
+                    <h3>Govt Subsidy</h3>
+                    <p class="stat-value">₹<span id="stat-subsidy">--</span></p>
+                    <p class="stat-change positive">Cloud Verified</p>
                 </div>
             </div>
 
             <!-- Content Grid -->
             <div class="content-grid">
-                <!-- Chart -->
+                <!-- Chart Area -->
                 <div class="chart-container glass-panel">
+                    <div class="no-data-overlay" id="chart-overlay">
+                        <div class="no-data-icon">📈</div>
+                        <h3>History Unavailable</h3>
+                        <p class="no-data-text">Historical trends will be populated once your first bill is processed.</p>
+                    </div>
                     <div class="section-header">
                         <h2>Energy Usage Trends</h2>
-                        <select class="glass-select">
-                            <option>Today</option>
-                            <option>This Week</option>
-                            <option>This Month</option>
-                        </select>
                     </div>
                     <canvas id="usageChart"></canvas>
                 </div>
 
-                <!-- AI Predictor -->
-                <div class="predictor-container glass-panel">
-                    <h2>AI Usage Predictor</h2>
-                    <p>Forecast your energy consumption based on environmental factors.</p>
-                    
-                    <form id="prediction-form">
-                        <div class="input-group">
-                            <label for="temperature">Temperature (°C): <span id="temp-val">30</span></label>
-                            <input type="range" id="temperature" min="20" max="45" value="30">
+                <!-- Sidebar column -->
+                <div class="sidebar-column">
+                    <!-- Bill Upload Section -->
+                    <div class="upload-container glass-panel">
+                        <h2>Smart Bill Analysis</h2>
+                        <p class="subtitle">PDF or Image supported</p>
+                        
+                        <div class="upload-box" id="drop-zone">
+                            <input type="file" id="bill-input" hidden accept=".pdf,image/*">
+                            <div class="upload-icon">📄</div>
+                            <p>Click or drag your bill here</p>
+                            <span class="file-info" id="file-info">No file selected</span>
                         </div>
                         
-                        <div class="input-group">
-                            <label for="humidity">Humidity (%): <span id="hum-val">60</span></label>
-                            <input type="range" id="humidity" min="30" max="90" value="60">
-                        </div>
-                        
-                        <div class="input-group">
-                            <label for="appliance_usage">Appliance Usage (Scale 1-10): <span id="app-val">5</span></label>
-                            <input type="range" id="appliance_usage" min="1" max="10" value="5">
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary w-100" id="predict-btn">
-                            Predict Energy 
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        <button id="upload-btn" class="btn btn-outline w-100" style="margin-top: 1.5rem;">
+                            Analyze Bill
                         </button>
-                    </form>
 
-                    <!-- Result Area -->
-                    <div id="prediction-result" class="result-card hidden">
-                        <div class="result-content">
-                            <h4>Estimated Consumption</h4>
-                            <div class="result-value">
-                                <span id="pred-energy">--</span> <span>units</span>
+                        <div id="upload-status" class="status-msg hidden"></div>
+                    </div>
+
+                    <!-- AI Predictor -->
+                    <div class="predictor-container glass-panel">
+                        <h2>AI Usage Predictor</h2>
+                        <p class="subtitle">Forecast based on environment</p>
+                        
+                        <form id="prediction-form">
+                            <div class="input-group">
+                                <label for="temperature">Temperature (°C) <span><span id="temp-val">30</span>°</span></label>
+                                <input type="range" id="temperature" min="20" max="45" value="30">
                             </div>
-                            <div class="result-badge" id="pred-level">Loading...</div>
+                            
+                            <div class="input-group">
+                                <label for="humidity">Humidity (%) <span><span id="hum-val">60</span>%</span></label>
+                                <input type="range" id="humidity" min="30" max="90" value="60">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="appliance_usage">Appliance Load <span><span id="app-val">5</span>/10</span></label>
+                                <input type="range" id="appliance_usage" min="1" max="10" value="5">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100" id="predict-btn">
+                                Predict Consumption
+                            </button>
+                        </form>
+
+                        <!-- Result Area -->
+                        <div id="prediction-result" class="result-card hidden">
+                            <div class="result-content">
+                                <h3>Estimated Consumption</h3>
+                                <div class="stat-value" style="font-size: 2rem;">
+                                    <span id="pred-energy">--</span> <span class="unit">units</span>
+                                </div>
+                                <div class="result-badge" id="pred-level">Loading...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
