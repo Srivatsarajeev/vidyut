@@ -3,41 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidyut Cloud - Energy Analytics</title>
-    <!-- Google Fonts -->
+    <title>Vidyut AI | Intelligent Energy Cloud</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
         <!-- Sidebar -->
-        <aside class="sidebar glass-panel">
+        <aside class="sidebar glass">
             <div class="logo">
-                <span class="logo-icon">⚡</span>
-                <h2>Vidyut</h2>
+                <div class="logo-v">⚡</div>
+                <h2>Vidyut AI</h2>
             </div>
             
-            <nav class="nav-menu">
-                <a href="#" class="nav-item active">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <nav class="nav-links">
+                <a href="#" class="nav-link active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                     <span>Dashboard</span>
                 </a>
-                <a href="#" class="nav-item">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                <a href="#" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
                     <span>Analytics</span>
                 </a>
-                <a href="#" class="nav-item">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <a href="#" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Security</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                     <span>Settings</span>
                 </a>
             </nav>
 
             <div class="sidebar-footer">
-                <div class="cloud-status">
-                    <div class="dot"></div>
-                    <span>Cloud Sync Active</span>
+                <div class="user-badge">
+                    <div class="avatar"></div>
+                    <div class="user-info">
+                        <p style="font-weight: 600; font-size: 0.875rem;">Cloud Node 01</p>
+                        <p style="color: var(--text-low); font-size: 0.75rem;"><span class="status-dot"></span> Active</p>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -45,116 +50,145 @@
         <!-- Main Content -->
         <main class="main-content">
             <header>
-                <div>
+                <div class="header-text">
                     <h1>Overview</h1>
-                    <p class="subtitle">Intelligent Energy Management</p>
+                    <p>Intelligent Energy Management & Insights</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-outline">Export</button>
-                    <button class="btn btn-primary">Reports</button>
+                    <button class="btn glass">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Export
+                    </button>
+                    <button class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Cloud Reports
+                    </button>
                 </div>
             </header>
 
-            <!-- Stats Row -->
-            <div class="stats-grid" id="stats-grid">
-                <!-- No Data Overlay -->
-                <div class="no-data-overlay" id="stats-overlay">
-                    <div class="no-data-icon">📊</div>
-                    <h3>No Bill Data</h3>
-                    <p class="no-data-text">Upload your electricity bill to see consumption and cost analysis.</p>
-                </div>
-
-                <div class="stat-card glass-panel">
-                    <h3>Total Consumption</h3>
-                    <p class="stat-value"><span id="stat-consumption">--</span> <span class="unit">kWh</span></p>
-                    <p class="stat-change" id="stat-period">Waiting for upload...</p>
-                </div>
-                <div class="stat-card glass-panel">
-                    <h3>Net Payable</h3>
-                    <p class="stat-value">₹<span id="stat-cost">--</span></p>
-                    <p class="stat-change" id="stat-due">---</p>
-                </div>
-                <div class="stat-card glass-panel">
-                    <h3>Govt Subsidy</h3>
-                    <p class="stat-value">₹<span id="stat-subsidy">--</span></p>
-                    <p class="stat-change positive">Cloud Verified</p>
-                </div>
-            </div>
-
-            <!-- Content Grid -->
-            <div class="content-grid">
-                <!-- Chart Area -->
-                <div class="chart-container glass-panel">
-                    <div class="no-data-overlay" id="chart-overlay">
-                        <div class="no-data-icon">📈</div>
-                        <h3>History Unavailable</h3>
-                        <p class="no-data-text">Historical trends will be populated once your first bill is processed.</p>
+            <!-- Stats Grid -->
+            <section class="stats-grid">
+                <div class="stat-card glass">
+                    <span class="stat-label">Total Consumption</span>
+                    <div class="stat-value-container">
+                        <span class="stat-value" id="stat-consumption">142</span>
+                        <span class="stat-unit">kWh</span>
                     </div>
-                    <div class="section-header">
-                        <h2>Energy Usage Trends</h2>
+                    <div class="stat-trend trend-down">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+                        <span>-12% vs last month</span>
                     </div>
-                    <canvas id="usageChart"></canvas>
                 </div>
 
-                <!-- Sidebar column -->
-                <div class="sidebar-column">
-                    <!-- Bill Upload Section -->
-                    <div class="upload-container glass-panel">
-                        <h2>Smart Bill Analysis</h2>
-                        <p class="subtitle">PDF or Image supported</p>
-                        
-                        <div class="upload-box" id="drop-zone">
-                            <input type="file" id="bill-input" hidden accept=".pdf,image/*">
-                            <div class="upload-icon">📄</div>
-                            <p>Click or drag your bill here</p>
-                            <span class="file-info" id="file-info">No file selected</span>
+                <div class="stat-card glass">
+                    <span class="stat-label">Net Payable</span>
+                    <div class="stat-value-container">
+                        <span class="stat-unit">₹</span>
+                        <span class="stat-value" id="stat-cost">1,207.50</span>
+                    </div>
+                    <div class="stat-trend">
+                        <span style="color: var(--text-low)">Due in 12 days</span>
+                    </div>
+                </div>
+
+                <div class="stat-card glass">
+                    <span class="stat-label">Efficiency Score</span>
+                    <div class="stat-value-container">
+                        <span class="stat-value" id="stat-efficiency">84</span>
+                        <span class="stat-unit">/100</span>
+                    </div>
+                    <div class="stat-trend trend-up">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                        <span>+5.2% Optimization</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Usage Chart -->
+                <section class="chart-section glass">
+                    <div class="chart-header">
+                        <div>
+                            <h3 style="margin-bottom: 4px;">Energy Usage Trends</h3>
+                            <p style="font-size: 0.875rem; color: var(--text-low);">Real-time consumption analytics</p>
                         </div>
-                        
-                        <button id="upload-btn" class="btn btn-outline w-100" style="margin-top: 1.5rem;">
-                            Analyze Bill
-                        </button>
+                        <div class="chart-actions">
+                            <select class="glass" style="padding: 4px 8px; border-radius: 8px; color: var(--text-high); border: 1px solid var(--glass-border); background: transparent; font-family: inherit; font-size: 0.75rem;">
+                                <option>Last 24 Hours</option>
+                                <option>Last 7 Days</option>
+                                <option>Last Month</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-container">
+                        <canvas id="usageChart"></canvas>
+                    </div>
+                </section>
 
-                        <div id="upload-status" class="status-msg hidden"></div>
+                <!-- Right Panel -->
+                <aside class="side-panel">
+                    <!-- Bill Upload -->
+                    <div class="action-card glass">
+                        <h3>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            Sync Bill Data
+                        </h3>
+                        <div class="upload-zone" id="drop-zone">
+                            <input type="file" id="bill-input" hidden accept=".pdf,image/*">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                            <p id="file-info">Drop your PDF bill here</p>
+                            <span style="font-size: 0.7rem; color: var(--text-low);">Maximum size: 5MB</span>
+                        </div>
+                        <button id="upload-btn" class="btn btn-primary btn-block" style="margin-top: 1.5rem;">
+                            Analyze Patterns
+                        </button>
+                        <div id="upload-status" class="status-msg hidden" style="margin-top: 1rem; font-size: 0.8rem; text-align: center;"></div>
                     </div>
 
                     <!-- AI Predictor -->
-                    <div class="predictor-container glass-panel">
-                        <h2>AI Usage Predictor</h2>
-                        <p class="subtitle">Forecast based on environment</p>
-                        
-                        <form id="prediction-form">
-                            <div class="input-group">
-                                <label for="temperature">Temperature (°C) <span><span id="temp-val">30</span>°</span></label>
+                    <div class="action-card glass">
+                        <h3>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+                            Smart Forecast
+                        </h3>
+                        <form id="prediction-form" class="predictor-form">
+                            <div class="range-group">
+                                <div class="range-label">
+                                    <span>Ambient Temp</span>
+                                    <span><span id="temp-val">30</span>°C</span>
+                                </div>
                                 <input type="range" id="temperature" min="20" max="45" value="30">
                             </div>
                             
-                            <div class="input-group">
-                                <label for="humidity">Humidity (%) <span><span id="hum-val">60</span>%</span></label>
+                            <div class="range-group">
+                                <div class="range-label">
+                                    <span>Relative Humidity</span>
+                                    <span><span id="hum-val">60</span>%</span>
+                                </div>
                                 <input type="range" id="humidity" min="30" max="90" value="60">
                             </div>
                             
-                            <div class="input-group">
-                                <label for="appliance_usage">Appliance Load <span><span id="app-val">5</span>/10</span></label>
+                            <div class="range-group">
+                                <div class="range-label">
+                                    <span>Appliance Load</span>
+                                    <span><span id="app-val">5</span>/10</span>
+                                </div>
                                 <input type="range" id="appliance_usage" min="1" max="10" value="5">
                             </div>
                             
-                            <button type="submit" class="btn btn-primary w-100" id="predict-btn">
-                                Predict Consumption
+                            <button type="submit" class="btn glass btn-block" id="predict-btn" style="border: 1px solid var(--primary);">
+                                Run Simulation
                             </button>
                         </form>
 
-                        <!-- Result Area -->
-                        <div id="prediction-result" class="result-card hidden">
-                            <div class="result-content">
-                                <h3>Estimated Consumption</h3>
-                                <div class="stat-value" style="font-size: 2rem;">
-                                    <span id="pred-energy">--</span> <span class="unit">units</span>
-                                </div>
-                                <div class="result-badge" id="pred-level">Loading...</div>
-                            </div>
+                        <div id="prediction-result" class="prediction-card hidden">
+                            <span class="pred-title">Estimated Usage</span>
+                            <div class="pred-val"><span id="pred-energy">--</span> <span style="font-size: 0.9rem; font-weight: 400; color: var(--text-low);">kWh</span></div>
+                            <div id="pred-level" class="badge">--</div>
                         </div>
                     </div>
-                </div>
+                </aside>
             </div>
         </main>
     </div>

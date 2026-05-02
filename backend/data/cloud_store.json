@@ -6,5 +6,13 @@
         "cost": 1691.5,
         "period": "March 2026",
         "sync_id": "cloud_1766761768"
+    },
+    {
+        "timestamp": "2026-05-02T18:51:02.827718",
+        "filename": "bescom.jpg",
+        "consumption": 254,
+        "cost": 1993.9,
+        "period": "April 2026",
+        "sync_id": "vidyut_cloud_3438305434"
     }
 ]

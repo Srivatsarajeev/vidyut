@@ -1,13 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     
     // --- 1. UI Elements ---
-    const statsOverlay = document.getElementById('stats-overlay');
-    const chartOverlay = document.getElementById('chart-overlay');
     const statConsumption = document.getElementById('stat-consumption');
     const statCost = document.getElementById('stat-cost');
-    const statSubsidy = document.getElementById('stat-subsidy');
-    const statPeriod = document.getElementById('stat-period');
-    const statDue = document.getElementById('stat-due');
+    const statEfficiency = document.getElementById('stat-efficiency');
 
     // --- 2. Chart Initialization ---
     const ctx = document.getElementById('usageChart').getContext('2d');
@@ -20,24 +16,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const usageData = data.map(item => item.usage);
 
         let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');   
-        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');   
+        gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.1)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
 
         usageChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Energy Usage (Watts)',
+                    label: 'Consumption',
                     data: usageData,
-                    borderColor: '#3b82f6',
+                    borderColor: '#6366f1',
                     backgroundColor: gradient,
-                    borderWidth: 4,
-                    pointBackgroundColor: '#020617',
-                    pointBorderColor: '#3b82f6',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#050508',
+                    pointBorderColor: '#6366f1',
                     pointBorderWidth: 2,
-                    pointRadius: 6,
-                    pointHoverRadius: 8,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
                     fill: true,
                     tension: 0.4
                 }]
@@ -49,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     legend: { display: false },
                     tooltip: {
                         backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleFont: { family: 'Outfit', size: 13 },
+                        bodyFont: { family: 'Outfit', size: 12 },
                         padding: 12,
                         cornerRadius: 12,
                         displayColors: false,
@@ -57,12 +56,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                        ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                        ticks: { 
+                            color: '#64748b', 
+                            font: { family: 'Outfit', size: 11 },
+                            padding: 10
+                        },
+                        border: { display: false }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { color: '#94a3b8', font: { family: 'Outfit' } }
+                        ticks: { 
+                            color: '#64748b', 
+                            font: { family: 'Outfit', size: 11 },
+                            padding: 10
+                        },
+                        border: { display: false }
                     }
                 }
             }
@@ -91,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hum = document.getElementById('humidity').value;
         const app = document.getElementById('appliance_usage').value;
 
-        predictBtn.innerText = 'Analyzing Patterns...';
+        predictBtn.innerHTML = '<span class="loader"></span> Simulating...';
         predictBtn.disabled = true;
 
         try {
@@ -101,16 +110,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultCard.classList.remove('hidden');
                 predEnergy.innerText = data.predicted_energy_consumption;
                 predLevel.innerText = data.usage_level;
-                predLevel.className = 'result-badge'; 
+                predLevel.className = 'badge'; 
                 
                 if (data.usage_level.includes('High')) predLevel.classList.add('badge-high');
-                else if (data.usage_level.includes('Medium')) predLevel.classList.add('badge-medium');
+                else if (data.usage_level.includes('Medium')) predLevel.classList.add('badge-mid');
                 else predLevel.classList.add('badge-low');
             }
         } catch (error) {
             console.error(error);
         } finally {
-            predictBtn.innerText = 'Predict Consumption';
+            predictBtn.innerText = 'Run Simulation';
             predictBtn.disabled = false;
         }
     });
@@ -126,7 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     billInput.addEventListener('change', () => {
         if (billInput.files.length > 0) {
-            fileInfo.innerText = `Selected: ${billInput.files[0].name}`;
+            fileInfo.innerText = billInput.files[0].name;
+            fileInfo.style.color = 'var(--text-high)';
         }
     });
 
@@ -136,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('file', billInput.files[0]);
 
-        uploadBtn.innerText = 'Syncing to Cloud...';
+        uploadBtn.innerText = 'Cloud Syncing...';
         uploadBtn.disabled = true;
 
         try {
@@ -148,34 +158,35 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const data = await response.json();
                 
-                // Remove Overlays
-                statsOverlay.classList.add('hidden');
-                chartOverlay.classList.add('hidden');
-
                 // Update Stats
                 statConsumption.innerText = data.extracted_data.consumption;
-                statCost.innerText = data.extracted_data.cost;
-                statSubsidy.innerText = (data.extracted_data.consumption * 2.1).toFixed(2); // Simulated subsidy calculation
-                statPeriod.innerText = `Period: ${data.extracted_data.period}`;
-                statDue.innerText = `Due Date: 25/04/2026`;
+                statCost.innerText = data.extracted_data.cost.toLocaleString();
+                
+                // Simulated Efficiency update
+                statEfficiency.innerText = Math.floor(Math.random() * 20) + 75;
 
-                // Load history from cloud
+                // Load updated history
                 fetch('http://127.0.0.1:8001/history')
                     .then(r => r.json())
                     .then(historyData => initChart(historyData));
 
-                uploadStatus.innerText = "Cloud Sync Successful! ⚡";
-                uploadStatus.className = 'status-msg status-success';
+                uploadStatus.innerText = "Sync Successful ⚡";
+                uploadStatus.style.color = 'var(--accent)';
                 uploadStatus.classList.remove('hidden');
             }
         } catch (err) {
-            uploadStatus.innerText = "Sync Failed. Check Connection.";
-            uploadStatus.className = 'status-msg status-error';
+            uploadStatus.innerText = "Sync Error. Check API.";
+            uploadStatus.style.color = 'var(--danger)';
             uploadStatus.classList.remove('hidden');
         } finally {
-            uploadBtn.innerText = 'Analyze Bill';
+            uploadBtn.innerText = 'Analyze Patterns';
             uploadBtn.disabled = false;
         }
     });
+
+    // Load initial demo data
+    fetch('http://127.0.0.1:8001/history')
+        .then(r => r.json())
+        .then(historyData => initChart(historyData));
 
 });

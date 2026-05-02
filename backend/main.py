@@ -6,7 +6,7 @@ import numpy as np
 import random
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = FastAPI(title="Vidyut Cloud API")
 
@@ -42,7 +42,8 @@ def load_from_cloud():
 
 # Load AI model
 try:
-    model = pickle.load(open("../model/model.pkl", "rb"))
+    model_path = os.path.join(os.path.dirname(__file__), "../model/model.pkl")
+    model = pickle.load(open(model_path, "rb"))
 except Exception as e:
     print(f"Warning: Model could not be loaded: {e}")
     model = None
@@ -53,58 +54,84 @@ def home():
 
 @app.get("/history")
 def get_history():
-    # Simulated cloud history fetch
-    return [
-        {"time": "00:00", "usage": random.randint(30, 50)},
-        {"time": "04:00", "usage": random.randint(20, 40)},
-        {"time": "08:00", "usage": random.randint(120, 160)},
-        {"time": "12:00", "usage": random.randint(80, 110)},
-        {"time": "16:00", "usage": random.randint(70, 90)},
-        {"time": "20:00", "usage": random.randint(150, 200)},
-    ]
+    """Returns a realistic 24-hour energy usage curve"""
+    history = []
+    # Base pattern for a residential home
+    # 00-06: Low (sleep)
+    # 07-09: High (morning routine)
+    # 10-16: Medium (daytime)
+    # 17-22: Peak (evening usage)
+    # 23-24: Tapering
+    
+    now = datetime.now()
+    for i in range(24):
+        hour = (now - timedelta(hours=23-i)).hour
+        time_str = f"{hour:02d}:00"
+        
+        if 0 <= hour <= 6:
+            base = 20
+        elif 7 <= hour <= 9:
+            base = 150
+        elif 10 <= hour <= 16:
+            base = 80
+        elif 17 <= hour <= 22:
+            base = 200
+        else:
+            base = 60
+            
+        # Add some variation
+        usage = base + random.randint(-15, 15)
+        history.append({"time": time_str, "usage": max(usage, 10)})
+        
+    return history
 
 @app.get("/predict")
 def predict(temperature: float, humidity: float, appliance_usage: float):
     if not model:
-        # Fallback if model is missing
-        prediction = (temperature * 0.5) + (humidity * 0.2) + (appliance_usage * 15)
+        # Fallback heuristic if model is missing
+        prediction = (temperature * 0.8) + (humidity * 0.3) + (appliance_usage * 20)
     else:
-        data = np.array([[temperature, humidity, appliance_usage]])
-        prediction = model.predict(data)[0]
+        try:
+            data = np.array([[temperature, humidity, appliance_usage]])
+            prediction = model.predict(data)[0]
+        except:
+            prediction = (temperature * 0.8) + (humidity * 0.3) + (appliance_usage * 20)
 
-    if prediction > 150:
-        level = "High ⚠️"
-    elif prediction > 120:
-        level = "Medium"
+    if prediction > 180:
+        level = "High Critical ⚠️"
+    elif prediction > 130:
+        level = "Medium Load"
     else:
-        level = "Low"
+        level = "Optimized"
 
     return {
-        "predicted_energy_consumption": round(prediction, 2),
+        "predicted_energy_consumption": round(float(prediction), 2),
         "usage_level": level
     }
 
 @app.post("/upload")
 async def upload_bill(file: UploadFile = File(...)):
-    # Simulate OCR parsing
-    consumption = random.randint(50, 220)
-    cost = consumption * 8.5
+    # Simulate OCR parsing with semi-realistic values
+    # In a real app, this would use Tesseract or AWS Textract
+    consumption = random.randint(140, 350)
+    cost = consumption * 7.85
     
     extracted_data = {
         "filename": file.filename,
         "consumption": consumption,
         "cost": round(cost, 2),
-        "period": "March 2026",
-        "sync_id": f"cloud_{random.getrandbits(32)}"
+        "period": "April 2026",
+        "sync_id": f"vidyut_cloud_{random.getrandbits(32)}"
     }
     
     # Persistent storage in "cloud"
     save_to_cloud(extracted_data)
     
     return {
-        "message": "Bill synchronized to Vidyut Cloud ⚡",
+        "message": "Intelligence synchronized to Vidyut Cloud ⚡",
         "extracted_data": extracted_data
     }
 
 # Serving the static frontend
+# Note: In production, use a proper web server or serve via FastAPI mount correctly
 app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
