@@ -14,5 +14,74 @@
         "cost": 1993.9,
         "period": "April 2026",
         "sync_id": "vidyut_cloud_3438305434"
+    },
+    {
+        "timestamp": "2026-06-30T18:51:28.097921",
+        "sync_id": "vidyut_cloud_1900749450",
+        "type": "Manual Entry",
+        "consumption": 196.05,
+        "is_eligible": true,
+        "inputs": [
+            150.0,
+            142.0,
+            165.0,
+            190.0,
+            210.0,
+            235.0,
+            245.0,
+            220.0,
+            195.0,
+            180.0,
+            160.0,
+            155.0
+        ],
+        "average": 187.25,
+        "highest": 245.0
+    },
+    {
+        "timestamp": "2026-06-30T18:51:44.921687",
+        "sync_id": "vidyut_cloud_583474717",
+        "type": "Manual Cloud Sync",
+        "consumption": 196.05,
+        "is_eligible": true,
+        "inputs": [
+            150.0,
+            142.0,
+            165.0,
+            190.0,
+            210.0,
+            235.0,
+            245.0,
+            220.0,
+            195.0,
+            180.0,
+            160.0,
+            155.0
+        ],
+        "average": 187.25,
+        "highest": 245.0
+    },
+    {
+        "timestamp": "2026-06-30T18:52:23.737614",
+        "sync_id": "vidyut_cloud_2906581127",
+        "type": "Manual Entry",
+        "consumption": 196.05,
+        "is_eligible": true,
+        "inputs": [
+            150.0,
+            142.0,
+            165.0,
+            190.0,
+            210.0,
+            235.0,
+            245.0,
+            220.0,
+            195.0,
+            180.0,
+            160.0,
+            155.0
+        ],
+        "average": 187.25,
+        "highest": 245.0
     }
 ]

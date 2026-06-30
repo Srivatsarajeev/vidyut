@@ -3,196 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidyut AI | Intelligent Energy Cloud</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Vidyut – Energy Consumption Analytics</title>
+    <meta name="description" content="Electricity usage prediction using Machine Learning">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
         <!-- Sidebar -->
-        <aside class="sidebar glass">
-            <div class="logo">
-                <div class="logo-v">⚡</div>
-                <h2>Vidyut AI</h2>
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-name">Vidyut</span>
+                <span class="brand-sub">ML Energy Analytics</span>
             </div>
-            
-            <nav class="nav-links">
-                <a href="#" class="nav-link active">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                    <span>Dashboard</span>
-                </a>
-                <a href="#" class="nav-link">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
-                    <span>Analytics</span>
-                </a>
-                <a href="#" class="nav-link">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <span>Security</span>
-                </a>
-                <a href="#" class="nav-link">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                    <span>Settings</span>
-                </a>
-            </nav>
-
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Input Data
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                        Results
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        Tips
+                    </a>
+                </li>
+            </ul>
             <div class="sidebar-footer">
-                <div class="user-badge">
-                    <div class="avatar"></div>
-                    <div class="user-info">
-                        <p style="font-weight: 600; font-size: 0.875rem;">Cloud Node 01</p>
-                        <p style="color: var(--text-low); font-size: 0.75rem;"><span class="status-dot"></span> Active</p>
-                    </div>
-                </div>
+                <button class="predict-usage-btn">Predict Usage</button>
             </div>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
-            <header>
-                <div class="header-text">
-                    <h1>Overview</h1>
-                    <p>Intelligent Energy Management & Insights</p>
+            <nav class="top-navbar">
+                <div class="page-title-main">Vidyut – Energy Consumption Analytics</div>
+                <div class="navbar-right" style="display: flex; align-items: center; gap: 20px;">
+                    <div class="cloud-status-badge">
+                        <span class="status-pulse-green"></span>
+                        Vidyut Cloud: Connected ⚡
+                    </div>
+                    <div class="top-icons">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M18 21v-2a4 4 0 0 0-4-4H10a4 4 0 0 0-4 4v2"></path></svg>
+                    </div>
                 </div>
-                <div class="header-actions">
-                    <button class="btn glass">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Export
-                    </button>
-                    <button class="btn btn-primary">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                        Cloud Reports
-                    </button>
-                </div>
-            </header>
+            </nav>
 
-            <!-- Stats Grid -->
-            <section class="stats-grid">
-                <div class="stat-card glass">
-                    <span class="stat-label">Total Consumption</span>
-                    <div class="stat-value-container">
-                        <span class="stat-value" id="stat-consumption">142</span>
-                        <span class="stat-unit">kWh</span>
-                    </div>
-                    <div class="stat-trend trend-down">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
-                        <span>-12% vs last month</span>
-                    </div>
-                </div>
+            <div class="content-wrapper">
+                <section class="hero-section">
+                    <h1 class="hero-title">Vidyut – Energy Consumption Analytics</h1>
+                    <p class="hero-subtitle">Electricity usage prediction using Machine Learning</p>
+                </section>
 
-                <div class="stat-card glass">
-                    <span class="stat-label">Net Payable</span>
-                    <div class="stat-value-container">
-                        <span class="stat-unit">₹</span>
-                        <span class="stat-value" id="stat-cost">1,207.50</span>
-                    </div>
-                    <div class="stat-trend">
-                        <span style="color: var(--text-low)">Due in 12 days</span>
-                    </div>
-                </div>
-
-                <div class="stat-card glass">
-                    <span class="stat-label">Efficiency Score</span>
-                    <div class="stat-value-container">
-                        <span class="stat-value" id="stat-efficiency">84</span>
-                        <span class="stat-unit">/100</span>
-                    </div>
-                    <div class="stat-trend trend-up">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-                        <span>+5.2% Optimization</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Dashboard Content -->
-            <div class="dashboard-content">
-                <!-- Usage Chart -->
-                <section class="chart-section glass">
-                    <div class="chart-header">
-                        <div>
-                            <h3 style="margin-bottom: 4px;">Energy Usage Trends</h3>
-                            <p style="font-size: 0.875rem; color: var(--text-low);">Real-time consumption analytics</p>
-                        </div>
-                        <div class="chart-actions">
-                            <select class="glass" style="padding: 4px 8px; border-radius: 8px; color: var(--text-high); border: 1px solid var(--glass-border); background: transparent; font-family: inherit; font-size: 0.75rem;">
-                                <option>Last 24 Hours</option>
-                                <option>Last 7 Days</option>
-                                <option>Last Month</option>
-                            </select>
+                <section class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">Average Monthly Usage</span>
+                        <div class="stat-value-container">
+                            <span class="stat-value" id="avg-val">185.4</span>
+                            <span class="stat-unit">Units</span>
                         </div>
                     </div>
-                    <div class="chart-canvas-container">
-                        <canvas id="usageChart"></canvas>
+                    <div class="stat-card">
+                        <span class="stat-label">Highest Usage Month</span>
+                        <div class="stat-value-container">
+                            <span class="stat-value red" id="high-val">245</span>
+                            <span class="stat-unit">Units (July)</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Lowest Usage Month</span>
+                        <div class="stat-value-container">
+                            <span class="stat-value" id="low-val">142</span>
+                            <span class="stat-unit">Units (Feb)</span>
+                        </div>
                     </div>
                 </section>
 
-                <!-- Right Panel -->
-                <aside class="side-panel">
-                    <!-- Bill Upload -->
-                    <div class="action-card glass">
-                        <h3>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                            Sync Bill Data
-                        </h3>
-                        <div class="upload-zone" id="drop-zone">
-                            <input type="file" id="bill-input" hidden accept=".pdf,image/*">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-                            <p id="file-info">Drop your PDF bill here</p>
-                            <span style="font-size: 0.7rem; color: var(--text-low);">Maximum size: 5MB</span>
+                <div class="dashboard-layout">
+                    <!-- Left Column -->
+                    <div class="left-col">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">Monthly Consumption Data</h2>
+                                <button class="btn-upload" id="btn-upload">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                    Upload CSV
+                                </button>
+                                <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                            </div>
+                            <div class="monthly-grid">
+                                <div class="input-group"><label>Jan</label><input type="number" value="150" id="jan"></div>
+                                <div class="input-group"><label>Feb</label><input type="number" value="142" id="feb"></div>
+                                <div class="input-group"><label>Mar</label><input type="number" value="165" id="mar"></div>
+                                <div class="input-group"><label>Apr</label><input type="number" value="190" id="apr"></div>
+                                <div class="input-group"><label>May</label><input type="number" value="210" id="may"></div>
+                                <div class="input-group"><label>Jun</label><input type="number" value="235" id="jun"></div>
+                                <div class="input-group"><label>Jul</label><input type="number" value="245" id="jul"></div>
+                                <div class="input-group"><label>Aug</label><input type="number" value="220" id="aug"></div>
+                                <div class="input-group"><label>Sep</label><input type="number" value="195" id="sep"></div>
+                                <div class="input-group"><label>Oct</label><input type="number" value="180" id="oct"></div>
+                                <div class="input-group"><label>Nov</label><input type="number" value="160" id="nov"></div>
+                                <div class="input-group"><label>Dec</label><input type="number" value="155" id="dec"></div>
+                            </div>
                         </div>
-                        <button id="upload-btn" class="btn btn-primary btn-block" style="margin-top: 1.5rem;">
-                            Analyze Patterns
-                        </button>
-                        <div id="upload-status" class="status-msg hidden" style="margin-top: 1rem; font-size: 0.8rem; text-align: center;"></div>
+
+                        <div class="card">
+                            <h2 class="card-title" style="margin-bottom: 24px;">Yearly Consumption Overview</h2>
+                            <div class="chart-box">
+                                <canvas id="overviewChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header" style="margin-bottom: 16px;">
+                                <h2 class="card-title">Cloud Sync History</h2>
+                                <button class="btn-upload" id="btn-sync-manual" style="background-color: #0f172a; border: 1px solid var(--border-color); padding: 6px 12px; font-size: 0.85rem;" title="Sync current dashboard to cloud">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+                                    Sync Now
+                                </button>
+                            </div>
+                            <div class="table-container" style="overflow-x: auto; max-height: 250px;">
+                                <table class="cloud-history-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+                                            <th style="padding: 10px 8px;">Time</th>
+                                            <th style="padding: 10px 8px;">Type</th>
+                                            <th style="padding: 10px 8px;">Forecast</th>
+                                            <th style="padding: 10px 8px;">Average</th>
+                                            <th style="padding: 10px 8px;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cloud-history-tbody">
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No synced records found.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- AI Predictor -->
-                    <div class="action-card glass">
-                        <h3>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
-                            Smart Forecast
-                        </h3>
-                        <form id="prediction-form" class="predictor-form">
-                            <div class="range-group">
-                                <div class="range-label">
-                                    <span>Ambient Temp</span>
-                                    <span><span id="temp-val">30</span>°C</span>
-                                </div>
-                                <input type="range" id="temperature" min="20" max="45" value="30">
-                            </div>
-                            
-                            <div class="range-group">
-                                <div class="range-label">
-                                    <span>Relative Humidity</span>
-                                    <span><span id="hum-val">60</span>%</span>
-                                </div>
-                                <input type="range" id="humidity" min="30" max="90" value="60">
-                            </div>
-                            
-                            <div class="range-group">
-                                <div class="range-label">
-                                    <span>Appliance Load</span>
-                                    <span><span id="app-val">5</span>/10</span>
-                                </div>
-                                <input type="range" id="appliance_usage" min="1" max="10" value="5">
-                            </div>
-                            
-                            <button type="submit" class="btn glass btn-block" id="predict-btn" style="border: 1px solid var(--primary);">
-                                Run Simulation
-                            </button>
-                        </form>
+                    <!-- Right Column -->
+                    <div class="right-col">
+                        <button class="predict-btn-main">Predict Next Month Usage</button>
 
-                        <div id="prediction-result" class="prediction-card hidden">
-                            <span class="pred-title">Estimated Usage</span>
-                            <div class="pred-val"><span id="pred-energy">--</span> <span style="font-size: 0.9rem; font-weight: 400; color: var(--text-low);">kWh</span></div>
-                            <div id="pred-level" class="badge">--</div>
+                        <div class="card result-card">
+                            <h3 class="stat-label" style="margin-bottom: 16px;">Predicted Result</h3>
+                            
+                            <div id="prediction-placeholder" style="text-align: center; color: var(--text-muted); padding: 12px; font-size: 0.9rem; line-height: 1.5;">
+                                Enter your data and click <strong>Predict Next Month Usage</strong> to analyze and sync to Vidyut Cloud.
+                            </div>
+
+                            <div id="prediction-content" style="display: none;">
+                                <div id="alert-eligible" class="alert alert-success" style="display: none; margin-bottom: 16px;">
+                                    <div class="alert-icon">✓</div>
+                                    <div class="alert-content">
+                                        <span class="alert-title">Eligible for FREE electricity</span>
+                                        <span class="alert-desc">Forecasted: <span id="forecast-units-eligible">--</span> Units (Gruha Jyothi Scheme ✅)</span>
+                                    </div>
+                                </div>
+
+                                <div id="alert-exceeded" class="alert alert-danger" style="display: none; margin-bottom: 16px;">
+                                    <div class="alert-icon">⚠</div>
+                                    <div class="alert-content">
+                                        <span class="alert-title">Limit exceeded – Full bill applicable</span>
+                                        <span class="alert-desc">Forecasted: <span id="forecast-units-exceeded">--</span> Units (&gt; 200 Units limit ❌)</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="sync-info-badge" style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #10b981; background: rgba(16, 185, 129, 0.08); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.15);">
+                                    <span class="status-pulse-green" style="background-color: #10b981; width: 8px; height: 8px;"></span>
+                                    Synced to Cloud Sync ID: <span id="cloud-sync-id" style="font-family: monospace; font-weight: 600;">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card tips-card">
+                            <div class="tips-title-row">
+                                <span class="tips-icon">💡</span>
+                                <h2 class="card-title">Energy Saving Tips</h2>
+                            </div>
+                            <ul class="tips-list">
+                                <li class="tip-item">
+                                    <span class="tip-bolt">⚡</span>
+                                    <span class="tip-text">Turn off unused appliances when leaving the room.</span>
+                                </li>
+                                <li class="tip-item">
+                                    <span class="tip-bolt">⚡</span>
+                                    <span class="tip-text">Reduce peak hour usage (6 PM - 10 PM) by 20%.</span>
+                                </li>
+                                <li class="tip-item">
+                                    <span class="tip-bolt">⚡</span>
+                                    <span class="tip-text">Switch to LED bulbs to reduce lighting consumption by 75%.</span>
+                                </li>
+                                <li class="tip-item">
+                                    <span class="tip-bolt">⚡</span>
+                                    <span class="tip-text">Unplug chargers and electronic devices when not in use.</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
-                </aside>
+                </div>
             </div>
+
+            <footer class="footer">
+                <div class="footer-left">
+                    <strong>Vidyut</strong> © 2024 Vidyut Project Team — Electricity usage prediction using Machine Learning
+                </div>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Documentation</a>
+                    <a href="#" class="footer-link">Privacy Policy</a>
+                    <a href="#" class="footer-link">Contact Support</a>
+                </div>
+            </footer>
         </main>
     </div>
-    
+
     <script src="script.js"></script>
 </body>
 </html>

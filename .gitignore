@@ -1,0 +1,14 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Workspace Projects / Untracked files
+ticketing_app/
+data/sample_usage.csv

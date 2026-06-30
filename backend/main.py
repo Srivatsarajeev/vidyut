@@ -1,15 +1,19 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-import pickle
 import numpy as np
-import random
-import json
+from sklearn.linear_model import LinearRegression
+import pandas as pd
+import io
 import os
-from datetime import datetime, timedelta
+import json
+import random
+from datetime import datetime
+from typing import List
 
-app = FastAPI(title="Vidyut Cloud API")
+app = FastAPI(title="Vidyut ⚡ – Energy Consumption Analytics Platform")
 
+# Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,113 +29,242 @@ DB_FILE = os.path.join(DATA_DIR, "cloud_store.json")
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
+def load_from_cloud():
+    if not os.path.exists(DB_FILE):
+        return []
+    try:
+        with open(DB_FILE, "r") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
 def save_to_cloud(data):
     current_data = load_from_cloud()
     current_data.append({
         "timestamp": datetime.now().isoformat(),
         **data
     })
-    with open(DB_FILE, "w") as f:
-        json.dump(current_data, f, indent=4)
+    try:
+        with open(DB_FILE, "w") as f:
+            json.dump(current_data, f, indent=4)
+    except Exception as e:
+        print(f"Error saving to cloud: {e}")
 
-def load_from_cloud():
-    if not os.path.exists(DB_FILE):
-        return []
-    with open(DB_FILE, "r") as f:
-        return json.load(f)
+@app.get("/api/health")
+def health_check():
+    return {"status": "online", "message": "Vidyut Backend ⚡ is running"}
 
-# Load AI model
-try:
-    model_path = os.path.join(os.path.dirname(__file__), "../model/model.pkl")
-    model = pickle.load(open(model_path, "rb"))
-except Exception as e:
-    print(f"Warning: Model could not be loaded: {e}")
-    model = None
+@app.post("/api/predict")
+async def predict_usage(data: List[float] = Body(...)):
+    """
+    Analyzes 12 months of electricity usage and predicts the 13th month.
+    Determines eligibility for Karnataka's Gruha Jyothi scheme.
+    """
+    if len(data) != 12:
+        raise HTTPException(status_code=400, detail="Exactly 12 months of data are required.")
 
-@app.get("/api")
-def home():
-    return {"message": "Vidyut Cloud API Running ⚡"}
+    # Prepare data for Linear Regression
+    X = np.array(range(12)).reshape(-1, 1)
+    y = np.array(data)
 
-@app.get("/history")
-def get_history():
-    """Returns a realistic 24-hour energy usage curve"""
-    history = []
-    # Base pattern for a residential home
-    # 00-06: Low (sleep)
-    # 07-09: High (morning routine)
-    # 10-16: Medium (daytime)
-    # 17-22: Peak (evening usage)
-    # 23-24: Tapering
+    # Train model
+    model = LinearRegression()
+    model.fit(X, y)
+
+    # Predict next month (index 12)
+    next_month_index = np.array([[12]])
+    prediction = model.predict(next_month_index)[0]
+    prediction = max(0, round(float(prediction), 2))
+
+    # Calculate Analytics
+    avg_usage = round(float(np.mean(data)), 2)
+    max_usage = round(float(np.max(data)), 2)
+    max_month_index = int(np.argmax(data))
     
-    now = datetime.now()
-    for i in range(24):
-        hour = (now - timedelta(hours=23-i)).hour
-        time_str = f"{hour:02d}:00"
+    # Eligibility Logic (Gruha Jyothi Scheme: <= 200 units free)
+    is_eligible = prediction <= 200
+    eligibility_status = "Eligible for FREE electricity under Gruha Jyothi ✅" if is_eligible else "Exceeds 200 units ❌ Full bill applicable"
+
+    # Recommendations Logic
+    recommendations = []
+    if prediction > 200:
+        recommendations = [
+            "Reduce AC usage during peak summer months.",
+            "Switch to energy-efficient LED bulbs.",
+            "Turn off unused appliances from the main socket.",
+            "Consider using a solar water heater."
+        ]
+    elif prediction > 150:
+        recommendations = [
+            "Monitor heavy appliance usage like washing machines.",
+            "Keep refrigerator vents clear for better efficiency.",
+            "Unplug chargers when not in use."
+        ]
+    else:
+        recommendations = [
+            "Great job! Your consumption is well within limits.",
+            "Keep up the efficient energy habits."
+        ]
+
+    # Sync to Cloud simulation
+    sync_id = f"vidyut_cloud_{random.getrandbits(32)}"
+    cloud_record = {
+        "sync_id": sync_id,
+        "type": "Manual Entry",
+        "consumption": prediction,
+        "is_eligible": is_eligible,
+        "inputs": data,
+        "average": avg_usage,
+        "highest": max_usage
+    }
+    save_to_cloud(cloud_record)
+
+    return {
+        "prediction": prediction,
+        "is_eligible": is_eligible,
+        "eligibility_status": eligibility_status,
+        "analytics": {
+            "average": avg_usage,
+            "highest": max_usage,
+            "peak_month_index": max_month_index
+        },
+        "recommendations": recommendations,
+        "historical_data": data,
+        "sync_id": sync_id
+    }
+
+@app.post("/api/upload-csv")
+async def upload_csv(file: UploadFile = File(...)):
+    """
+    Accepts a CSV file with usage data, returns prediction, and syncs to cloud.
+    Expected CSV format: A single column with 12 usage values.
+    """
+    try:
+        contents = await file.read()
+        df = pd.read_csv(io.StringIO(contents.decode('utf-8')), header=None)
         
-        if 0 <= hour <= 6:
-            base = 20
-        elif 7 <= hour <= 9:
-            base = 150
-        elif 10 <= hour <= 16:
-            base = 80
-        elif 17 <= hour <= 22:
-            base = 200
+        # Extract the first column as a list
+        usage_data = df.iloc[:, 0].tolist()
+        
+        if len(usage_data) < 12:
+            raise HTTPException(status_code=400, detail="CSV must contain at least 12 months of data.")
+        
+        # Take only the last 12 months if more are provided
+        usage_data = [float(x) for x in usage_data[-12:]]
+        
+        # Prepare data for Linear Regression
+        X = np.array(range(12)).reshape(-1, 1)
+        y = np.array(usage_data)
+
+        # Train model
+        model = LinearRegression()
+        model.fit(X, y)
+
+        # Predict next month (index 12)
+        next_month_index = np.array([[12]])
+        prediction = model.predict(next_month_index)[0]
+        prediction = max(0, round(float(prediction), 2))
+
+        # Calculate Analytics
+        avg_usage = round(float(np.mean(usage_data)), 2)
+        max_usage = round(float(np.max(usage_data)), 2)
+        max_month_index = int(np.argmax(usage_data))
+        
+        is_eligible = prediction <= 200
+        eligibility_status = "Eligible for FREE electricity under Gruha Jyothi ✅" if is_eligible else "Exceeds 200 units ❌ Full bill applicable"
+
+        # Recommendations Logic
+        recommendations = []
+        if prediction > 200:
+            recommendations = [
+                "Reduce AC usage during peak summer months.",
+                "Switch to energy-efficient LED bulbs.",
+                "Turn off unused appliances from the main socket.",
+                "Consider using a solar water heater."
+            ]
+        elif prediction > 150:
+            recommendations = [
+                "Monitor heavy appliance usage like washing machines.",
+                "Keep refrigerator vents clear for better efficiency.",
+                "Unplug chargers when not in use."
+            ]
         else:
-            base = 60
-            
-        # Add some variation
-        usage = base + random.randint(-15, 15)
-        history.append({"time": time_str, "usage": max(usage, 10)})
-        
-    return history
+            recommendations = [
+                "Great job! Your consumption is well within limits.",
+                "Keep up the efficient energy habits."
+            ]
 
-@app.get("/predict")
-def predict(temperature: float, humidity: float, appliance_usage: float):
-    if not model:
-        # Fallback heuristic if model is missing
-        prediction = (temperature * 0.8) + (humidity * 0.3) + (appliance_usage * 20)
-    else:
-        try:
-            data = np.array([[temperature, humidity, appliance_usage]])
-            prediction = model.predict(data)[0]
-        except:
-            prediction = (temperature * 0.8) + (humidity * 0.3) + (appliance_usage * 20)
+        # Sync to Cloud simulation
+        sync_id = f"vidyut_cloud_{random.getrandbits(32)}"
+        cloud_record = {
+            "sync_id": sync_id,
+            "type": f"CSV Upload ({file.filename})",
+            "consumption": prediction,
+            "is_eligible": is_eligible,
+            "inputs": usage_data,
+            "average": avg_usage,
+            "highest": max_usage
+        }
+        save_to_cloud(cloud_record)
 
-    if prediction > 180:
-        level = "High Critical ⚠️"
-    elif prediction > 130:
-        level = "Medium Load"
-    else:
-        level = "Optimized"
+        return {
+            "prediction": prediction,
+            "is_eligible": is_eligible,
+            "eligibility_status": eligibility_status,
+            "analytics": {
+                "average": avg_usage,
+                "highest": max_usage,
+                "peak_month_index": max_month_index
+            },
+            "recommendations": recommendations,
+            "historical_data": usage_data,
+            "sync_id": sync_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing CSV: {str(e)}")
 
-    return {
-        "predicted_energy_consumption": round(float(prediction), 2),
-        "usage_level": level
-    }
+@app.get("/api/cloud-records")
+def get_cloud_records():
+    """
+    Returns the history of synced cloud records.
+    """
+    return load_from_cloud()
 
-@app.post("/upload")
-async def upload_bill(file: UploadFile = File(...)):
-    # Simulate OCR parsing with semi-realistic values
-    # In a real app, this would use Tesseract or AWS Textract
-    consumption = random.randint(140, 350)
-    cost = consumption * 7.85
+@app.post("/api/sync")
+async def sync_data(data: List[float] = Body(...)):
+    """
+    Explicitly syncs the current usage inputs to the cloud.
+    """
+    if len(data) != 12:
+        raise HTTPException(status_code=400, detail="Exactly 12 months of data are required.")
     
-    extracted_data = {
-        "filename": file.filename,
-        "consumption": consumption,
-        "cost": round(cost, 2),
-        "period": "April 2026",
-        "sync_id": f"vidyut_cloud_{random.getrandbits(32)}"
-    }
+    avg_usage = round(float(np.mean(data)), 2)
+    max_usage = round(float(np.max(data)), 2)
     
-    # Persistent storage in "cloud"
-    save_to_cloud(extracted_data)
-    
-    return {
-        "message": "Intelligence synchronized to Vidyut Cloud ⚡",
-        "extracted_data": extracted_data
-    }
+    X = np.array(range(12)).reshape(-1, 1)
+    y = np.array(data)
+    model = LinearRegression()
+    model.fit(X, y)
+    next_month_index = np.array([[12]])
+    prediction = max(0, round(float(model.predict(next_month_index)[0]), 2))
+    is_eligible = prediction <= 200
 
-# Serving the static frontend
-# Note: In production, use a proper web server or serve via FastAPI mount correctly
-app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
+    sync_id = f"vidyut_cloud_{random.getrandbits(32)}"
+    cloud_record = {
+        "sync_id": sync_id,
+        "type": "Manual Cloud Sync",
+        "consumption": prediction,
+        "is_eligible": is_eligible,
+        "inputs": data,
+        "average": avg_usage,
+        "highest": max_usage
+    }
+    save_to_cloud(cloud_record)
+    return {"status": "success", "sync_id": sync_id, "message": "Dashboard synced to Vidyut Cloud ⚡"}
+
+# Mount the static frontend directory
+frontend_path = os.path.join(os.path.dirname(__file__), "../frontend")
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+else:
+    print(f"Warning: Frontend directory not found at {frontend_path}")

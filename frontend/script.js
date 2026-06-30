@@ -1,192 +1,348 @@
+/**
+ * Vidyut - Energy Consumption Analytics
+ * Frontend Logic
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
+    initChart();
+    setupEventListeners();
+    loadCloudRecords();
     
-    // --- 1. UI Elements ---
-    const statConsumption = document.getElementById('stat-consumption');
-    const statCost = document.getElementById('stat-cost');
-    const statEfficiency = document.getElementById('stat-efficiency');
+    // Run initial dashboard calculations based on default input values
+    updateDashboard();
+});
 
-    // --- 2. Chart Initialization ---
-    const ctx = document.getElementById('usageChart').getContext('2d');
-    let usageChart;
+let myChart;
+const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    const initChart = (data) => {
-        if (usageChart) usageChart.destroy();
-        
-        const labels = data.map(item => item.time);
-        const usageData = data.map(item => item.usage);
+function initChart() {
+    const ctx = document.getElementById('overviewChart').getContext('2d');
+    
+    // Initial data from the inputs
+    const initialData = months.map(m => parseFloat(document.getElementById(m).value) || 0);
 
-        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');   
-        gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.1)');
-        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
-
-        usageChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Consumption',
-                    data: usageData,
-                    borderColor: '#6366f1',
-                    backgroundColor: gradient,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#050508',
-                    pointBorderColor: '#6366f1',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    fill: true,
-                    tension: 0.4
-                }]
+    myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: monthNames,
+            datasets: [{
+                label: 'Units Consumed',
+                data: initialData,
+                backgroundColor: 'rgba(0, 97, 242, 0.1)',
+                borderColor: '#0061f2',
+                borderWidth: 2,
+                borderRadius: 4,
+                barThickness: 20,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                        titleFont: { family: 'Outfit', size: 13 },
-                        bodyFont: { family: 'Outfit', size: 12 },
-                        padding: 12,
-                        cornerRadius: 12,
-                        displayColors: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        display: false
                     }
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255, 255, 255, 0.03)' },
-                        ticks: { 
-                            color: '#64748b', 
-                            font: { family: 'Outfit', size: 11 },
-                            padding: 10
-                        },
-                        border: { display: false }
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
                     },
-                    x: {
-                        grid: { display: false },
-                        ticks: { 
-                            color: '#64748b', 
-                            font: { family: 'Outfit', size: 11 },
-                            padding: 10
+                    ticks: {
+                        font: {
+                            size: 10
                         },
-                        border: { display: false }
+                        color: '#64748b'
                     }
                 }
             }
-        });
-    };
+        }
+    });
+}
 
-    // --- 3. Input Range Updates ---
-    const inputs = ['temperature', 'humidity', 'appliance_usage'];
-    inputs.forEach(id => {
-        const input = document.getElementById(id);
-        const val = document.getElementById(id.substring(0,4) + '-val');
-        input.addEventListener('input', (e) => val.innerText = e.target.value);
+function setupEventListeners() {
+    // Listen for input changes to update the chart and stats
+    const inputs = document.querySelectorAll('.monthly-grid input');
+    inputs.forEach(input => {
+        input.addEventListener('input', updateDashboard);
     });
 
-    // --- 4. Prediction Logic ---
-    const predictForm = document.getElementById('prediction-form');
-    const resultCard = document.getElementById('prediction-result');
-    const predEnergy = document.getElementById('pred-energy');
-    const predLevel = document.getElementById('pred-level');
-    const predictBtn = document.getElementById('predict-btn');
-
-    predictForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    // Predict button logic
+    const predictBtn = document.querySelector('.predict-btn-main');
+    predictBtn.addEventListener('click', async () => {
+        const values = months.map(m => parseFloat(document.getElementById(m).value) || 0);
         
-        const temp = document.getElementById('temperature').value;
-        const hum = document.getElementById('humidity').value;
-        const app = document.getElementById('appliance_usage').value;
-
-        predictBtn.innerHTML = '<span class="loader"></span> Simulating...';
+        predictBtn.textContent = 'Analyzing & Syncing...';
         predictBtn.disabled = true;
 
         try {
-            const response = await fetch(`http://127.0.0.1:8001/predict?temperature=${temp}&humidity=${hum}&appliance_usage=${app}`);
-            if (response.ok) {
-                const data = await response.json();
-                resultCard.classList.remove('hidden');
-                predEnergy.innerText = data.predicted_energy_consumption;
-                predLevel.innerText = data.usage_level;
-                predLevel.className = 'badge'; 
-                
-                if (data.usage_level.includes('High')) predLevel.classList.add('badge-high');
-                else if (data.usage_level.includes('Medium')) predLevel.classList.add('badge-mid');
-                else predLevel.classList.add('badge-low');
-            }
+            const response = await fetch('/api/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(values),
+            });
+
+            if (!response.ok) throw new Error('Prediction API call failed');
+            const data = await response.json();
+            
+            displayPredictionResult(data);
+            loadCloudRecords(); // Refresh sync history
         } catch (error) {
             console.error(error);
+            alert('Error running prediction. Please ensure the backend is running.');
         } finally {
-            predictBtn.innerText = 'Run Simulation';
+            predictBtn.textContent = 'Predict Next Month Usage';
             predictBtn.disabled = false;
         }
     });
 
-    // --- 5. Bill Upload & Data Sync ---
-    const dropZone = document.getElementById('drop-zone');
-    const billInput = document.getElementById('bill-input');
-    const fileInfo = document.getElementById('file-info');
-    const uploadBtn = document.getElementById('upload-btn');
-    const uploadStatus = document.getElementById('upload-status');
+    // CSV Upload handlers
+    const btnUpload = document.getElementById('btn-upload');
+    const csvFileInput = document.getElementById('csv-file-input');
 
-    dropZone.addEventListener('click', () => billInput.click());
-
-    billInput.addEventListener('change', () => {
-        if (billInput.files.length > 0) {
-            fileInfo.innerText = billInput.files[0].name;
-            fileInfo.style.color = 'var(--text-high)';
-        }
+    btnUpload.addEventListener('click', () => {
+        csvFileInput.click();
     });
 
-    uploadBtn.addEventListener('click', async () => {
-        if (billInput.files.length === 0) return alert("Please select a bill first");
-
+    csvFileInput.addEventListener('change', async (e) => {
+        if (e.target.files.length === 0) return;
+        
+        const file = e.target.files[0];
         const formData = new FormData();
-        formData.append('file', billInput.files[0]);
+        formData.append('file', file);
 
-        uploadBtn.innerText = 'Cloud Syncing...';
-        uploadBtn.disabled = true;
+        const originalBtnText = btnUpload.innerHTML;
+        btnUpload.innerHTML = 'Uploading...';
+        btnUpload.disabled = true;
 
         try {
-            const response = await fetch('http://127.0.0.1:8001/upload', {
+            const response = await fetch('/api/upload-csv', {
                 method: 'POST',
-                body: formData
+                body: formData,
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                
-                // Update Stats
-                statConsumption.innerText = data.extracted_data.consumption;
-                statCost.innerText = data.extracted_data.cost.toLocaleString();
-                
-                // Simulated Efficiency update
-                statEfficiency.innerText = Math.floor(Math.random() * 20) + 75;
-
-                // Load updated history
-                fetch('http://127.0.0.1:8001/history')
-                    .then(r => r.json())
-                    .then(historyData => initChart(historyData));
-
-                uploadStatus.innerText = "Sync Successful ⚡";
-                uploadStatus.style.color = 'var(--accent)';
-                uploadStatus.classList.remove('hidden');
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.detail || 'CSV Upload failed');
             }
-        } catch (err) {
-            uploadStatus.innerText = "Sync Error. Check API.";
-            uploadStatus.style.color = 'var(--danger)';
-            uploadStatus.classList.remove('hidden');
+
+            const data = await response.json();
+            
+            // Update input fields in the UI
+            if (data.historical_data && data.historical_data.length === 12) {
+                months.forEach((m, idx) => {
+                    document.getElementById(m).value = data.historical_data[idx];
+                });
+            }
+
+            // Recalculate dashboard analytics and update chart
+            updateDashboard();
+            
+            // Show prediction result
+            displayPredictionResult(data);
+            
+            // Refresh sync history
+            loadCloudRecords();
+            
+            alert(`Successfully loaded data from ${file.name}!`);
+        } catch (error) {
+            console.error(error);
+            alert(`Error uploading CSV: ${error.message}`);
         } finally {
-            uploadBtn.innerText = 'Analyze Patterns';
-            uploadBtn.disabled = false;
+            btnUpload.innerHTML = originalBtnText;
+            btnUpload.disabled = false;
+            csvFileInput.value = ''; // Reset file input
         }
     });
 
-    // Load initial demo data
-    fetch('http://127.0.0.1:8001/history')
-        .then(r => r.json())
-        .then(historyData => initChart(historyData));
+    // Manual Cloud Sync Button
+    const btnSyncManual = document.getElementById('btn-sync-manual');
+    btnSyncManual.addEventListener('click', async () => {
+        const values = months.map(m => parseFloat(document.getElementById(m).value) || 0);
+        
+        const originalBtnText = btnSyncManual.innerHTML;
+        btnSyncManual.innerHTML = 'Syncing...';
+        btnSyncManual.disabled = true;
 
-});
+        try {
+            const response = await fetch('/api/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(values),
+            });
+
+            if (!response.ok) throw new Error('Sync API call failed');
+            const data = await response.json();
+            
+            loadCloudRecords(); // Refresh sync history
+            alert(`Dashboard successfully synced! Sync ID: ${data.sync_id}`);
+        } catch (error) {
+            console.error(error);
+            alert('Error syncing to cloud. Please ensure the backend is running.');
+        } finally {
+            btnSyncManual.innerHTML = originalBtnText;
+            btnSyncManual.disabled = false;
+        }
+    });
+
+    // Sidebar Predict button smooth scroll
+    const sidebarPredict = document.querySelector('.predict-usage-btn');
+    sidebarPredict.addEventListener('click', () => {
+        document.querySelector('.predict-btn-main').scrollIntoView({ behavior: 'smooth' });
+    });
+}
+
+function updateDashboard() {
+    const values = months.map(m => parseFloat(document.getElementById(m).value) || 0);
+
+    // Update Chart
+    if (myChart) {
+        myChart.data.datasets[0].data = values;
+        myChart.update();
+    }
+
+    // Update Stats
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+
+    document.getElementById('avg-val').textContent = avg.toFixed(1);
+    document.getElementById('high-val').textContent = max;
+    document.getElementById('low-val').textContent = min;
+    
+    // Find month of high/low
+    const highMonthIdx = values.indexOf(max);
+    const lowMonthIdx = values.indexOf(min);
+    
+    document.getElementById('high-val').parentElement.querySelector('.stat-unit').textContent = `Units (${monthNames[highMonthIdx]})`;
+    document.getElementById('low-val').parentElement.querySelector('.stat-unit').textContent = `Units (${monthNames[lowMonthIdx]})`;
+}
+
+function displayPredictionResult(data) {
+    // Hide placeholder, show content
+    document.getElementById('prediction-placeholder').style.display = 'none';
+    document.getElementById('prediction-content').style.display = 'block';
+
+    const alertEligible = document.getElementById('alert-eligible');
+    const alertExceeded = document.getElementById('alert-exceeded');
+    
+    if (data.is_eligible) {
+        alertEligible.style.display = 'flex';
+        alertExceeded.style.display = 'none';
+        document.getElementById('forecast-units-eligible').textContent = data.prediction;
+    } else {
+        alertEligible.style.display = 'none';
+        alertExceeded.style.display = 'flex';
+        document.getElementById('forecast-units-exceeded').textContent = data.prediction;
+    }
+
+    document.getElementById('cloud-sync-id').textContent = data.sync_id || '--';
+
+    // Update tips list dynamically
+    const tipsList = document.querySelector('.tips-list');
+    if (tipsList && data.recommendations) {
+        tipsList.innerHTML = '';
+        data.recommendations.forEach(rec => {
+            const li = document.createElement('li');
+            li.className = 'tip-item';
+            li.innerHTML = `
+                <span class="tip-bolt">⚡</span>
+                <span class="tip-text">${rec}</span>
+            `;
+            tipsList.appendChild(li);
+        });
+    }
+}
+
+async function loadCloudRecords() {
+    try {
+        const response = await fetch('/api/cloud-records');
+        if (!response.ok) throw new Error('Failed to fetch cloud records');
+        
+        const records = await response.json();
+        const tbody = document.getElementById('cloud-history-tbody');
+        tbody.innerHTML = '';
+
+        if (records.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No synced records found.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        // Sort records by timestamp (latest first)
+        records.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        records.forEach(rec => {
+            const tr = document.createElement('tr');
+            
+            // Format timestamp
+            const date = new Date(rec.timestamp);
+            const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            
+            // Identify type
+            const type = rec.type || (rec.filename ? `Upload (${rec.filename})` : 'Legacy Sync');
+            
+            // Forecasted value
+            const forecasted = rec.consumption ? `${rec.consumption} Units` : 'N/A';
+            
+            // Average value
+            const averageVal = rec.average ? `${rec.average} Units` : 'N/A';
+            
+            // Restore action button
+            let actionHtml = '';
+            if (rec.inputs && rec.inputs.length === 12) {
+                actionHtml = `<button class="btn-restore" data-inputs='${JSON.stringify(rec.inputs)}'>Restore</button>`;
+            } else {
+                actionHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">Non-restorable</span>`;
+            }
+
+            tr.innerHTML = `
+                <td style="padding: 10px 8px;">${formattedTime}</td>
+                <td style="padding: 10px 8px; font-weight: 500;">${type}</td>
+                <td style="padding: 10px 8px;">${forecasted}</td>
+                <td style="padding: 10px 8px;">${averageVal}</td>
+                <td style="padding: 10px 8px;">${actionHtml}</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+
+        // Set event listeners for restore buttons
+        document.querySelectorAll('.btn-restore').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const inputs = JSON.parse(e.target.getAttribute('data-inputs'));
+                if (inputs && inputs.length === 12) {
+                    months.forEach((m, idx) => {
+                        document.getElementById(m).value = inputs[idx];
+                    });
+                    updateDashboard();
+                    
+                    // Trigger prediction after restore
+                    document.querySelector('.predict-btn-main').click();
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Error loading cloud records:', error);
+    }
+}
