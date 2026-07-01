@@ -1,19 +1,50 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Body
+from fastapi import FastAPI, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-import numpy as np
-from sklearn.linear_model import LinearRegression
-import pandas as pd
-import io
-import os
+try:
+    import boto3
+    from botocore.exceptions import ClientError
+except ImportError:
+    boto3 = None
+
+    class ClientError(Exception):
+        pass
+from dotenv import load_dotenv
 import json
+import os
 import random
+import logging
 from datetime import datetime
 from typing import List
 
-app = FastAPI(title="Vidyut ⚡ – Energy Consumption Analytics Platform")
+# Configure logging to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("vidyut")
 
-# Enable CORS for frontend communication
+BASE_DIR = os.path.dirname(__file__)
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))
+
+_root_env = os.path.join(PROJECT_ROOT, ".env")
+_backend_env = os.path.join(BASE_DIR, ".env")
+
+# Load .env files — backend/.env takes precedence (override=True)
+if os.path.exists(_root_env):
+    load_dotenv(_root_env, override=True)
+    logger.info(f"Loaded env from project root: {_root_env}")
+else:
+    logger.warning(f"No .env found at project root: {_root_env}")
+
+if os.path.exists(_backend_env):
+    load_dotenv(_backend_env, override=True)
+    logger.info(f"Loaded env from backend dir: {_backend_env}")
+else:
+    logger.warning(f"No .env found in backend dir: {_backend_env} — credentials will not be loaded!")
+
+app = FastAPI(title="Vidyut - Home Electricity Analyzer")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,249 +53,371 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Cloud Storage Simulation ---
-DATA_DIR = "data"
-DB_FILE = os.path.join(DATA_DIR, "cloud_store.json")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("AWS_REGION", "ap-south-1")
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "vidyut-rajeev-bmsit-demo")
+S3_PREFIX = os.getenv("S3_PREFIX", "house-usage-analysis").strip("/")
+CREATE_S3_BUCKET = os.getenv("CREATE_S3_BUCKET", "true").lower() == "true"
+UNIT_RATE = float(os.getenv("UNIT_RATE", "7.5"))
 
-if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR)
+s3_client = None
+aws_connected = False
+aws_status_message = "AWS credentials not provided. Add them to .env to enable S3."
 
-def load_from_cloud():
-    if not os.path.exists(DB_FILE):
-        return []
+
+def ensure_bucket_exists():
+    global aws_status_message
+    logger.info(f"Checking existence of S3 bucket: {S3_BUCKET_NAME}")
     try:
-        with open(DB_FILE, "r") as f:
-            return json.load(f)
-    except Exception:
-        return []
+        s3_client.head_bucket(Bucket=S3_BUCKET_NAME)
+        aws_status_message = f"Connected to existing S3 bucket {S3_BUCKET_NAME}."
+        logger.info(aws_status_message)
+        return True
+    except ClientError as err:
+        code = err.response.get("Error", {}).get("Code", "")
+        if code not in ["404", "NoSuchBucket", "NotFound"]:
+            aws_status_message = f"S3 bucket check failed: {code}"
+            logger.error(aws_status_message)
+            return False
 
-def save_to_cloud(data):
-    current_data = load_from_cloud()
-    current_data.append({
+    if not CREATE_S3_BUCKET:
+        aws_status_message = f"S3 bucket {S3_BUCKET_NAME} does not exist."
+        logger.warning(aws_status_message)
+        return False
+
+    try:
+        logger.info(f"Bucket {S3_BUCKET_NAME} does not exist. Creating bucket in region {AWS_REGION}...")
+        params = {"Bucket": S3_BUCKET_NAME}
+        if AWS_REGION != "us-east-1":
+            params["CreateBucketConfiguration"] = {"LocationConstraint": AWS_REGION}
+        s3_client.create_bucket(**params)
+        logger.info(f"Bucket {S3_BUCKET_NAME} created. Enabling public access block for security...")
+        s3_client.put_public_access_block(
+            Bucket=S3_BUCKET_NAME,
+            PublicAccessBlockConfiguration={
+                "BlockPublicAcls": True,
+                "IgnorePublicAcls": True,
+                "BlockPublicPolicy": True,
+                "RestrictPublicBuckets": True,
+            },
+        )
+        aws_status_message = f"Created and connected to S3 bucket {S3_BUCKET_NAME}."
+        logger.info(aws_status_message)
+        return True
+    except Exception as err:
+        aws_status_message = f"Could not create S3 bucket: {err}"
+        logger.error(aws_status_message)
+        return False
+
+
+# ── Credential diagnostic (masked) ──────────────────────────────────────────
+logger.info(f"AWS_ACCESS_KEY_ID  : {'SET ('+AWS_ACCESS_KEY_ID[:4]+'...)' if AWS_ACCESS_KEY_ID else 'NOT SET — check backend/.env'}")
+logger.info(f"AWS_SECRET_ACCESS_KEY: {'SET' if AWS_SECRET_ACCESS_KEY else 'NOT SET — check backend/.env'}")
+logger.info(f"AWS_REGION         : {AWS_REGION}")
+logger.info(f"S3_BUCKET_NAME     : {S3_BUCKET_NAME}")
+
+import threading
+
+def initialize_aws_s3():
+    global s3_client, aws_connected, aws_status_message
+    if boto3 is None:
+        aws_status_message = "boto3 is not installed. Run: pip install -r requirements.txt"
+        logger.error(aws_status_message)
+        return
+
+    if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
+        aws_status_message = (
+            "AWS credentials missing. Open backend/.env and set "
+            "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
+        )
+        logger.error(aws_status_message)
+        return
+
+    try:
+        logger.info("Initializing AWS S3 client in background...")
+        s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=AWS_REGION,
+        )
+        aws_connected = ensure_bucket_exists()
+
+        if aws_connected:
+            # ── Upload connectivity probe to verify write access ────────────
+            probe_key = f"{S3_PREFIX}/vidyut_connectivity_probe.json"
+            probe_body = json.dumps({
+                "type": "connectivity_probe",
+                "timestamp": datetime.now().isoformat(),
+                "bucket": S3_BUCKET_NAME,
+                "region": AWS_REGION,
+                "status": "connected",
+            }, indent=2).encode("utf-8")
+            s3_client.put_object(
+                Bucket=S3_BUCKET_NAME,
+                Key=probe_key,
+                Body=probe_body,
+                ContentType="application/json",
+            )
+            logger.info(f"S3 connectivity probe uploaded: s3://{S3_BUCKET_NAME}/{probe_key}")
+    except Exception as err:
+        aws_status_message = f"Failed to connect to AWS S3: {err}"
+        logger.error(aws_status_message)
+        aws_connected = False
+
+# Start the AWS connection check in a background thread so it doesn't block server startup
+threading.Thread(target=initialize_aws_s3, daemon=True).start()
+
+
+
+MOCK_S3_RECORDS = []
+
+
+def s3_file_url(object_key):
+    encoded_key = object_key.replace("\\", "/")
+    if AWS_REGION == "us-east-1":
+        return f"https://{S3_BUCKET_NAME}.s3.amazonaws.com/{encoded_key}"
+    return f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{encoded_key}"
+
+
+def require_s3():
+    if boto3 is None:
+        raise HTTPException(
+            status_code=503,
+            detail="AWS SDK boto3 is not installed. Run: python -m pip install -r backend/requirements.txt",
+        )
+    if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="AWS credentials are missing. Add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to .env.",
+        )
+    if not aws_connected or not s3_client:
+        raise HTTPException(status_code=503, detail=aws_status_message)
+
+
+def build_s3_object_key(sync_id):
+    return f"{S3_PREFIX}/{sync_id}.json" if S3_PREFIX else f"{sync_id}.json"
+
+
+def save_record(data):
+    sync_id = data.get("sync_id", f"vidyut_{random.getrandbits(32)}")
+    object_key = build_s3_object_key(sync_id)
+    url = s3_file_url(object_key)
+    
+    record = {
         "timestamp": datetime.now().isoformat(),
-        **data
-    })
-    try:
-        with open(DB_FILE, "w") as f:
-            json.dump(current_data, f, indent=4)
-    except Exception as e:
-        print(f"Error saving to cloud: {e}")
+        "cloud_provider": "AWS S3" if aws_connected else "S3 Demo Mode (Mock)",
+        "s3_bucket": S3_BUCKET_NAME,
+        "s3_object_key": object_key,
+        "s3_url": url,
+        **data,
+    }
+
+    if aws_connected and s3_client:
+        logger.info(f"Uploading analysis record to S3 bucket: {S3_BUCKET_NAME}, Key: {object_key}")
+        try:
+            s3_client.put_object(
+                Bucket=S3_BUCKET_NAME,
+                Key=object_key,
+                Body=json.dumps(record, indent=2).encode("utf-8"),
+                ContentType="application/json",
+            )
+            logger.info(f"Successfully uploaded analysis record to S3. URL: {url}")
+        except ClientError as err:
+            code = err.response.get("Error", {}).get("Code", "S3Error")
+            logger.error(f"S3 upload failed with ClientError: {code}")
+            raise HTTPException(status_code=502, detail=f"S3 upload failed: {code}")
+        except Exception as err:
+            logger.error(f"S3 upload failed with error: {err}")
+            raise HTTPException(status_code=502, detail=f"S3 upload failed: {err}")
+    else:
+        logger.info(f"[Demo Mode] Simulating upload of record to S3 memory. Key: {object_key}")
+        MOCK_S3_RECORDS.append(record)
+
+    return record
+
+
+def load_all_records():
+    if aws_connected and s3_client:
+        prefix = f"{S3_PREFIX}/" if S3_PREFIX else ""
+        logger.info(f"Listing analysis records in S3 bucket: {S3_BUCKET_NAME}, Prefix: {prefix}")
+        try:
+            response = s3_client.list_objects_v2(Bucket=S3_BUCKET_NAME, Prefix=prefix)
+            records = []
+            contents = response.get("Contents", [])
+            logger.info(f"Found {len(contents)} objects under prefix '{prefix}'")
+            for obj in contents:
+                key = obj.get("Key", "")
+                if key.endswith(".json"):
+                    logger.info(f"Retrieving S3 record content for key: {key}")
+                    body = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=key)["Body"].read()
+                    records.append(json.loads(body.decode("utf-8")))
+            logger.info(f"Successfully loaded {len(records)} records from S3 history.")
+            return records
+        except ClientError as err:
+            code = err.response.get("Error", {}).get("Code", "S3Error")
+            logger.error(f"S3 list/get failed with ClientError: {code}")
+            raise HTTPException(status_code=502, detail=f"S3 read failed: {code}")
+        except Exception as err:
+            logger.error(f"S3 list/get failed with error: {err}")
+            raise HTTPException(status_code=502, detail=f"S3 read failed: {err}")
+    else:
+        logger.info(f"[Demo Mode] Retrieving mock S3 records from memory (Count: {len(MOCK_S3_RECORDS)})")
+        return MOCK_S3_RECORDS
+
+
+def appliance_advice(appliances):
+    tips = []
+    total = sum(appliances.values()) or 1
+    shares = {name: value / total for name, value in appliances.items()}
+
+    if shares.get("ac", 0) >= 0.2:
+        tips.append("AC usage is high. Set AC to 24-26 C, clean filters, and use fans with AC.")
+    if shares.get("fridge", 0) >= 0.18:
+        tips.append("Fridge usage is high. Avoid frequent door opening and keep temperature on medium.")
+    if shares.get("lights", 0) >= 0.15:
+        tips.append("Lighting usage is high. Replace old bulbs with LED bulbs and switch off empty rooms.")
+    if shares.get("fans", 0) >= 0.15:
+        tips.append("Fan usage is high. Turn fans off when rooms are empty and service old fans.")
+    if shares.get("washing_machine", 0) >= 0.12:
+        tips.append("Washing machine usage is high. Run full loads and avoid daily half-load washing.")
+    if shares.get("tv", 0) >= 0.1:
+        tips.append("TV usage is noticeable. Switch off from the main plug instead of standby mode.")
+    if shares.get("other", 0) >= 0.15:
+        tips.append("Other appliances are taking many units. Unplug chargers and avoid idle appliance use.")
+    if not tips:
+        tips.append("Usage is balanced. Continue switching off idle appliances and tracking weekly units.")
+
+    return tips
+
+
+def analyze_house(house):
+    appliances = {
+        "lights": float(house.get("lights", 0)),
+        "fans": float(house.get("fans", 0)),
+        "fridge": float(house.get("fridge", 0)),
+        "tv": float(house.get("tv", 0)),
+        "washing_machine": float(house.get("washing_machine", 0)),
+        "ac": float(house.get("ac", 0)),
+        "other": float(house.get("other", 0)),
+    }
+    current_units = round(sum(appliances.values()), 2)
+    high_usage_appliance = max(appliances, key=appliances.get)
+
+    saving_factor = 0.92 if current_units > 250 else 0.95 if current_units > 180 else 0.98
+    predicted_units = round(current_units * saving_factor, 2)
+    current_bill = round(current_units * UNIT_RATE, 2)
+    predicted_bill = round(predicted_units * UNIT_RATE, 2)
+    savings = round(current_bill - predicted_bill, 2)
+
+    return {
+        "house_id": house.get("house_id", "House"),
+        "appliances": appliances,
+        "current_units": current_units,
+        "predicted_next_month_units": predicted_units,
+        "current_bill": current_bill,
+        "predicted_next_month_bill": predicted_bill,
+        "estimated_savings": savings,
+        "highest_usage_appliance": high_usage_appliance,
+        "recommendations": appliance_advice(appliances),
+    }
+
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "online", "message": "Vidyut Backend ⚡ is running"}
-
-@app.post("/api/predict")
-async def predict_usage(data: List[float] = Body(...)):
-    """
-    Analyzes 12 months of electricity usage and predicts the 13th month.
-    Determines eligibility for Karnataka's Gruha Jyothi scheme.
-    """
-    if len(data) != 12:
-        raise HTTPException(status_code=400, detail="Exactly 12 months of data are required.")
-
-    # Prepare data for Linear Regression
-    X = np.array(range(12)).reshape(-1, 1)
-    y = np.array(data)
-
-    # Train model
-    model = LinearRegression()
-    model.fit(X, y)
-
-    # Predict next month (index 12)
-    next_month_index = np.array([[12]])
-    prediction = model.predict(next_month_index)[0]
-    prediction = max(0, round(float(prediction), 2))
-
-    # Calculate Analytics
-    avg_usage = round(float(np.mean(data)), 2)
-    max_usage = round(float(np.max(data)), 2)
-    max_month_index = int(np.argmax(data))
-    
-    # Eligibility Logic (Gruha Jyothi Scheme: <= 200 units free)
-    is_eligible = prediction <= 200
-    eligibility_status = "Eligible for FREE electricity under Gruha Jyothi ✅" if is_eligible else "Exceeds 200 units ❌ Full bill applicable"
-
-    # Recommendations Logic
-    recommendations = []
-    if prediction > 200:
-        recommendations = [
-            "Reduce AC usage during peak summer months.",
-            "Switch to energy-efficient LED bulbs.",
-            "Turn off unused appliances from the main socket.",
-            "Consider using a solar water heater."
-        ]
-    elif prediction > 150:
-        recommendations = [
-            "Monitor heavy appliance usage like washing machines.",
-            "Keep refrigerator vents clear for better efficiency.",
-            "Unplug chargers when not in use."
-        ]
-    else:
-        recommendations = [
-            "Great job! Your consumption is well within limits.",
-            "Keep up the efficient energy habits."
-        ]
-
-    # Sync to Cloud simulation
-    sync_id = f"vidyut_cloud_{random.getrandbits(32)}"
-    cloud_record = {
-        "sync_id": sync_id,
-        "type": "Manual Entry",
-        "consumption": prediction,
-        "is_eligible": is_eligible,
-        "inputs": data,
-        "average": avg_usage,
-        "highest": max_usage
+    return {
+        "status": "online",
+        "message": "Vidyut backend is running",
+        "cloud_connection": "AWS S3" if aws_connected else "S3 Demo Mode",
+        "s3_bucket": S3_BUCKET_NAME,
+        "s3_prefix": S3_PREFIX,
+        "aws_region": AWS_REGION,
     }
-    save_to_cloud(cloud_record)
+
+
+@app.get("/api/cloud-status")
+def cloud_status():
+    return {
+        "connected": aws_connected,
+        "provider": "AWS S3" if aws_connected else "S3 Demo Mode",
+        "bucket": S3_BUCKET_NAME,
+        "prefix": S3_PREFIX,
+        "region": AWS_REGION,
+        "message": aws_status_message,
+    }
+
+
+@app.post("/api/analyze-houses")
+def analyze_houses(houses: List[dict] = Body(...)):
+    if len(houses) != 5:
+        return {"error": "Exactly 5 houses are required."}
+
+    results = [analyze_house(house) for house in houses]
+    total_units = round(sum(item["current_units"] for item in results), 2)
+    predicted_total_units = round(sum(item["predicted_next_month_units"] for item in results), 2)
+    total_bill = round(sum(item["current_bill"] for item in results), 2)
+    predicted_total_bill = round(sum(item["predicted_next_month_bill"] for item in results), 2)
+    best_saving_house = max(results, key=lambda item: item["estimated_savings"])
+
+    sync_id = f"vidyut_house_analysis_{random.getrandbits(32)}"
+    saved_record = save_record(
+        {
+            "sync_id": sync_id,
+            "type": "Five House Appliance Analysis",
+            "houses": results,
+            "summary": {
+                "total_units": total_units,
+                "predicted_total_units": predicted_total_units,
+                "total_bill": total_bill,
+                "predicted_total_bill": predicted_total_bill,
+                "estimated_total_savings": round(total_bill - predicted_total_bill, 2),
+                "best_saving_house": best_saving_house["house_id"],
+            },
+        }
+    )
 
     return {
-        "prediction": prediction,
-        "is_eligible": is_eligible,
-        "eligibility_status": eligibility_status,
-        "analytics": {
-            "average": avg_usage,
-            "highest": max_usage,
-            "peak_month_index": max_month_index
-        },
-        "recommendations": recommendations,
-        "historical_data": data,
-        "sync_id": sync_id
+        "sync_id": sync_id,
+        "houses": results,
+        "summary": saved_record["summary"],
+        "s3_bucket": saved_record["s3_bucket"],
+        "s3_object_key": saved_record["s3_object_key"],
+        "s3_url": saved_record["s3_url"],
+        "cloud_provider": saved_record["cloud_provider"],
     }
 
-@app.post("/api/upload-csv")
-async def upload_csv(file: UploadFile = File(...)):
-    """
-    Accepts a CSV file with usage data, returns prediction, and syncs to cloud.
-    Expected CSV format: A single column with 12 usage values.
-    """
-    try:
-        contents = await file.read()
-        df = pd.read_csv(io.StringIO(contents.decode('utf-8')), header=None)
-        
-        # Extract the first column as a list
-        usage_data = df.iloc[:, 0].tolist()
-        
-        if len(usage_data) < 12:
-            raise HTTPException(status_code=400, detail="CSV must contain at least 12 months of data.")
-        
-        # Take only the last 12 months if more are provided
-        usage_data = [float(x) for x in usage_data[-12:]]
-        
-        # Prepare data for Linear Regression
-        X = np.array(range(12)).reshape(-1, 1)
-        y = np.array(usage_data)
 
-        # Train model
-        model = LinearRegression()
-        model.fit(X, y)
+@app.post("/api/create-s3-bucket")
+def create_s3_bucket():
+    if boto3 is None:
+        raise HTTPException(
+            status_code=503,
+            detail="AWS SDK boto3 is not installed. Run: python -m pip install -r backend/requirements.txt",
+        )
+    if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="AWS credentials are missing. Add them in backend/.env first.",
+        )
+    if not s3_client:
+        raise HTTPException(status_code=503, detail=aws_status_message)
 
-        # Predict next month (index 12)
-        next_month_index = np.array([[12]])
-        prediction = model.predict(next_month_index)[0]
-        prediction = max(0, round(float(prediction), 2))
+    connected = ensure_bucket_exists()
+    return {
+        "created": connected,
+        "connected": connected,
+        "bucket": S3_BUCKET_NAME,
+        "region": AWS_REGION,
+        "message": aws_status_message,
+    }
 
-        # Calculate Analytics
-        avg_usage = round(float(np.mean(usage_data)), 2)
-        max_usage = round(float(np.max(usage_data)), 2)
-        max_month_index = int(np.argmax(usage_data))
-        
-        is_eligible = prediction <= 200
-        eligibility_status = "Eligible for FREE electricity under Gruha Jyothi ✅" if is_eligible else "Exceeds 200 units ❌ Full bill applicable"
-
-        # Recommendations Logic
-        recommendations = []
-        if prediction > 200:
-            recommendations = [
-                "Reduce AC usage during peak summer months.",
-                "Switch to energy-efficient LED bulbs.",
-                "Turn off unused appliances from the main socket.",
-                "Consider using a solar water heater."
-            ]
-        elif prediction > 150:
-            recommendations = [
-                "Monitor heavy appliance usage like washing machines.",
-                "Keep refrigerator vents clear for better efficiency.",
-                "Unplug chargers when not in use."
-            ]
-        else:
-            recommendations = [
-                "Great job! Your consumption is well within limits.",
-                "Keep up the efficient energy habits."
-            ]
-
-        # Sync to Cloud simulation
-        sync_id = f"vidyut_cloud_{random.getrandbits(32)}"
-        cloud_record = {
-            "sync_id": sync_id,
-            "type": f"CSV Upload ({file.filename})",
-            "consumption": prediction,
-            "is_eligible": is_eligible,
-            "inputs": usage_data,
-            "average": avg_usage,
-            "highest": max_usage
-        }
-        save_to_cloud(cloud_record)
-
-        return {
-            "prediction": prediction,
-            "is_eligible": is_eligible,
-            "eligibility_status": eligibility_status,
-            "analytics": {
-                "average": avg_usage,
-                "highest": max_usage,
-                "peak_month_index": max_month_index
-            },
-            "recommendations": recommendations,
-            "historical_data": usage_data,
-            "sync_id": sync_id
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing CSV: {str(e)}")
 
 @app.get("/api/cloud-records")
 def get_cloud_records():
-    """
-    Returns the history of synced cloud records.
-    """
-    return load_from_cloud()
+    return load_all_records()
 
-@app.post("/api/sync")
-async def sync_data(data: List[float] = Body(...)):
-    """
-    Explicitly syncs the current usage inputs to the cloud.
-    """
-    if len(data) != 12:
-        raise HTTPException(status_code=400, detail="Exactly 12 months of data are required.")
-    
-    avg_usage = round(float(np.mean(data)), 2)
-    max_usage = round(float(np.max(data)), 2)
-    
-    X = np.array(range(12)).reshape(-1, 1)
-    y = np.array(data)
-    model = LinearRegression()
-    model.fit(X, y)
-    next_month_index = np.array([[12]])
-    prediction = max(0, round(float(model.predict(next_month_index)[0]), 2))
-    is_eligible = prediction <= 200
 
-    sync_id = f"vidyut_cloud_{random.getrandbits(32)}"
-    cloud_record = {
-        "sync_id": sync_id,
-        "type": "Manual Cloud Sync",
-        "consumption": prediction,
-        "is_eligible": is_eligible,
-        "inputs": data,
-        "average": avg_usage,
-        "highest": max_usage
-    }
-    save_to_cloud(cloud_record)
-    return {"status": "success", "sync_id": sync_id, "message": "Dashboard synced to Vidyut Cloud ⚡"}
-
-# Mount the static frontend directory
 frontend_path = os.path.join(os.path.dirname(__file__), "../frontend")
 if os.path.exists(frontend_path):
     app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
-else:
-    print(f"Warning: Frontend directory not found at {frontend_path}")

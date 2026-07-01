@@ -4,3 +4,5 @@ numpy
 scikit-learn
 python-multipart
 pandas
+boto3
+python-dotenv
