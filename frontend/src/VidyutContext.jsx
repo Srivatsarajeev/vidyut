@@ -2,9 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const VidyutContext = createContext();
 
-const API_BASE = window.location.port === '5173' || window.location.port === '3000'
-  ? 'http://localhost:8001'
-  : '';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (
+  window.location.port === '5173' || window.location.port === '3000'
+    ? 'http://localhost:8001'
+    : ''
+);
 
 export const VidyutProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
