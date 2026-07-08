@@ -43,7 +43,7 @@ if os.path.exists(_backend_env):
 else:
     logger.warning(f"No .env found in backend dir: {_backend_env} — credentials will not be loaded!")
 
-app = FastAPI(title="Vidyut - Home Electricity Analyzer")
+app = FastAPI(title="Vidyut - Home Energy Intelligence Platform")
 
 app.add_middleware(
     CORSMiddleware,
@@ -170,7 +170,6 @@ def initialize_aws_s3():
 threading.Thread(target=initialize_aws_s3, daemon=True).start()
 
 
-
 MOCK_S3_RECORDS = []
 
 
@@ -254,6 +253,8 @@ def load_all_records():
                     body = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=key)["Body"].read()
                     records.append(json.loads(body.decode("utf-8")))
             logger.info(f"Successfully loaded {len(records)} records from S3 history.")
+            # Sort by timestamp descending
+            records.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
             return records
         except ClientError as err:
             code = err.response.get("Error", {}).get("Code", "S3Error")
@@ -264,7 +265,10 @@ def load_all_records():
             raise HTTPException(status_code=502, detail=f"S3 read failed: {err}")
     else:
         logger.info(f"[Demo Mode] Retrieving mock S3 records from memory (Count: {len(MOCK_S3_RECORDS)})")
-        return MOCK_S3_RECORDS
+        # Sort by timestamp descending
+        mock_sorted = list(MOCK_S3_RECORDS)
+        mock_sorted.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        return mock_sorted
 
 
 def calculate_bescom_bill(units):
@@ -604,6 +608,313 @@ def analyze_houses(houses: List[dict] = Body(...)):
     }
 
 
+@app.post("/api/analyze-survey")
+def analyze_survey(data: dict = Body(...)):
+    profile = data.get("profile", {})
+    appliances_data = data.get("appliances", {})
+    ev = data.get("ev", {})
+    usage = data.get("usage", {})
+
+    full_name = profile.get("fullName", "User")
+    mobile = profile.get("mobileNumber", "")
+    house_type = profile.get("houseType", "Apartment")
+    family_members = int(profile.get("familyMembers", 2))
+    city = profile.get("city", "Bengaluru")
+    provider = profile.get("provider", "BESCOM")
+    monthly_bill = float(profile.get("monthlyBill", 2000.0))
+    bedrooms = int(profile.get("bedrooms", 2))
+
+    # Appliances
+    led_bulbs = int(appliances_data.get("ledBulbs", 0))
+    fans = int(appliances_data.get("fans", 0))
+    tvs = int(appliances_data.get("tvs", 0))
+    fridge_type = appliances_data.get("fridgeType", "None")
+    ac_type = appliances_data.get("acType", "None")
+    ac_count = int(appliances_data.get("acCount", 0))
+    washing_machine = appliances_data.get("washingMachine", "None")
+    microwave = bool(appliances_data.get("microwave", False))
+    water_heater = bool(appliances_data.get("waterHeater", False))
+    induction_stove = bool(appliances_data.get("inductionStove", False))
+    desktop = int(appliances_data.get("desktop", 0))
+    laptop = int(appliances_data.get("laptop", 0))
+    gaming_pc = int(appliances_data.get("gamingPc", 0))
+    ro_purifier = bool(appliances_data.get("roPurifier", False))
+    electric_iron = bool(appliances_data.get("electricIron", False))
+    mixer_grinder = bool(appliances_data.get("mixerGrinder", False))
+    vacuum_cleaner = bool(appliances_data.get("vacuumCleaner", False))
+
+    # EV
+    has_ev = bool(ev.get("hasEv", False))
+    ev_type = ev.get("evType", "None")
+    ev_brand = ev.get("evBrand", "")
+    ev_battery_capacity = float(ev.get("evBatteryCapacity", 0.0))
+    ev_charging_days = int(ev.get("evChargingDays", 0))
+    ev_charging_time = float(ev.get("evChargingTime", 0.0))
+    ev_monthly_hours = float(ev.get("evMonthlyHours", 0.0))
+
+    # Usage habits
+    usage_ac = float(usage.get("usageAc", 0.0))
+    usage_tv = float(usage.get("usageTv", 0.0))
+    usage_fridge = float(usage.get("usageFridge", 24.0))
+    usage_washing_machine = float(usage.get("usageWashingMachine", 0.0))
+    usage_lighting = float(usage.get("usageLighting", 0.0))
+    usage_fan = float(usage.get("usageFan", 0.0))
+    wfh = bool(usage.get("workFromHome", False))
+
+    # Energy consumption calculations (kWh per month)
+    lights_kwh = round(led_bulbs * 9.0 * usage_lighting * 30.0 / 1000.0, 2)
+    fans_kwh = round(fans * 60.0 * usage_fan * 30.0 / 1000.0, 2)
+    tv_kwh = round(tvs * 100.0 * usage_tv * 30.0 / 1000.0, 2)
+
+    fridge_watt = 0.0
+    if fridge_type == "Single Door":
+        fridge_watt = 150.0
+    elif fridge_type == "Double Door":
+        fridge_watt = 250.0
+    elif fridge_type == "Side-by-Side":
+        fridge_watt = 400.0
+    fridge_kwh = round(fridge_watt * (usage_fridge / 24.0) * 24.0 * 30.0 * 0.5 / 1000.0, 2)  # 50% duty cycle
+
+    ac_watt = 0.0
+    if ac_type == "1 Ton":
+        ac_watt = 1000.0
+    elif ac_type == "1.5 Ton":
+        ac_watt = 1500.0
+    elif ac_type == "2 Ton":
+        ac_watt = 2000.0
+    ac_kwh = round(ac_count * ac_watt * usage_ac * 30.0 / 1000.0, 2)
+
+    wm_watt = 0.0
+    if washing_machine == "Semi Automatic":
+        wm_watt = 350.0
+    elif washing_machine == "Fully Automatic":
+        wm_watt = 500.0
+    wm_kwh = round(wm_watt * usage_washing_machine * 4.3 / 1000.0, 2)
+
+    microwave_kwh = 18.0 if microwave else 0.0
+    water_heater_kwh = 90.0 if water_heater else 0.0
+    induction_stove_kwh = 45.0 if induction_stove else 0.0
+    desktop_kwh = round(desktop * 200.0 * 5.0 * 30.0 / 1000.0, 2)
+    laptop_kwh = round(laptop * 65.0 * 8.0 * 30.0 / 1000.0, 2)
+    gaming_pc_kwh = round(gaming_pc * 500.0 * 3.0 * 30.0 / 1000.0, 2)
+    ro_purifier_kwh = 3.6 if ro_purifier else 0.0
+    electric_iron_kwh = 9.0 if electric_iron else 0.0
+    mixer_grinder_kwh = 1.5 if mixer_grinder else 0.0
+    vacuum_cleaner_kwh = 7.2 if vacuum_cleaner else 0.0
+
+    ev_kwh = 0.0
+    if has_ev:
+        if ev_battery_capacity > 0:
+            ev_kwh = round(ev_battery_capacity * ev_charging_days * 4.3, 2)
+        else:
+            default_cap = 3.0 if ev_type in ["Electric Scooter", "Electric Bike"] else 40.0
+            ev_kwh = round(default_cap * ev_charging_days * 4.3, 2)
+
+    # WFH adjustment
+    wfh_kwh = 0.0
+    if wfh:
+        wfh_kwh = round((lights_kwh + fans_kwh + laptop_kwh + desktop_kwh) * 0.15, 2)
+
+    other_kwh = round(microwave_kwh + induction_stove_kwh + ro_purifier_kwh + electric_iron_kwh + mixer_grinder_kwh + vacuum_cleaner_kwh + wfh_kwh, 2)
+
+    # Summarize appliance consumption
+    appliances = {
+        "lights": lights_kwh,
+        "fans": fans_kwh,
+        "fridge": fridge_kwh,
+        "tv": tv_kwh,
+        "washing_machine": wm_kwh,
+        "ac": ac_kwh,
+        "water_heater": water_heater_kwh,
+        "computers": round(desktop_kwh + laptop_kwh + gaming_pc_kwh, 2),
+        "ev": ev_kwh,
+        "other": other_kwh
+    }
+
+    current_units = round(sum(appliances.values()), 2)
+
+    # Recommendations & Savings
+    recs = []
+    
+    # 1. EV Charging Schedule
+    if has_ev and ev_kwh > 0:
+        savings_kwh = round(ev_kwh * 0.15, 2)
+        savings_rs = round(ev_kwh * 1.5, 2)  # Rs 1.5 per unit shifted
+        recs.append({
+            "appliance": "Electric Vehicle",
+            "title": "Optimize EV Charging Schedule",
+            "tips": [
+                f"Charge your {ev_brand or ev_type} during off-peak hours (10:00 PM to 6:00 AM) to utilize off-peak grid pricing.",
+                "Avoid charging immediately after driving; let the battery cool down to preserve capacity.",
+                "Set charging limit to 80% for daily usage to enhance battery longevity."
+            ],
+            "estimated_saving": savings_rs,
+            "estimated_saving_kwh": savings_kwh
+        })
+
+    # 2. AC Temperature
+    if ac_count > 0 and ac_kwh > 0 and usage_ac > 4:
+        savings_kwh = round(ac_kwh * 0.20, 2)
+        savings_rs = round(savings_kwh * UNIT_RATE, 2)
+        recs.append({
+            "appliance": "Air Conditioner",
+            "title": "Optimize AC Temperature to 24°C-26°C",
+            "tips": [
+                "Setting the thermostat to 24°C instead of 18°C can reduce compressor run-time by up to 20%.",
+                "Ensure doors and windows are fully sealed while the AC is running to prevent cooling loss.",
+                "Service the AC filter and coils twice a season to maintain airflow efficiency."
+            ],
+            "estimated_saving": savings_rs,
+            "estimated_saving_kwh": savings_kwh
+        })
+
+    # 3. Upgrade Refrigerator
+    if fridge_type in ["Double Door", "Side-by-Side"] and fridge_kwh > 0:
+        savings_kwh = round(fridge_kwh * 0.25, 2)
+        savings_rs = round(savings_kwh * UNIT_RATE, 2)
+        recs.append({
+            "appliance": "Refrigerator",
+            "title": "Upgrade to a 5-Star Inverter Refrigerator",
+            "tips": [
+                "Modern 5-Star inverter compressors run at variable speeds and draw up to 30% less power.",
+                "Maintain a 3-4 inch clearance around the refrigerator sides and back for ventilation.",
+                "Ensure refrigerator door gaskets seal tightly to prevent cool air leakage."
+            ],
+            "estimated_saving": savings_rs,
+            "estimated_saving_kwh": savings_kwh
+        })
+
+    # 4. Geyser/Water Heater timer
+    if water_heater and water_heater_kwh > 0:
+        savings_kwh = round(water_heater_kwh * 0.30, 2)
+        savings_rs = round(savings_kwh * UNIT_RATE, 2)
+        recs.append({
+            "appliance": "Water Heater",
+            "title": "Install a Geyser Timer & Reduce Temperature",
+            "tips": [
+                "A smart timer prevents the geyser from heating water continuously; set it to run 20 mins before use.",
+                "Lower the thermostat temperature from 65°C to 50°C to significantly reduce standing losses.",
+                "Insulate hot water pipes to maintain water temperature for longer periods."
+            ],
+            "estimated_saving": savings_rs,
+            "estimated_saving_kwh": savings_kwh
+        })
+
+    # 5. Lighting
+    if led_bulbs > 8 and usage_lighting > 5:
+        savings_kwh = round(lights_kwh * 0.20, 2)
+        savings_rs = round(savings_kwh * UNIT_RATE, 2)
+        recs.append({
+            "appliance": "Lights",
+            "title": "Switch to High-Efficiency LEDs & Use Sensors",
+            "tips": [
+                "Upgrade any remaining fluorescent tube lights (FTLs) or CFLs to high-efficiency LEDs (9W-12W).",
+                "Utilize natural day-lighting in common rooms and turn off lights in unoccupied spaces.",
+                "Install motion-sensor switches in bathrooms and corridors to automate shut-offs."
+            ],
+            "estimated_saving": savings_rs,
+            "estimated_saving_kwh": savings_kwh
+        })
+
+    # 6. Standby power / computer load
+    if (desktop > 0 or gaming_pc > 0) and (desktop_kwh + gaming_pc_kwh) > 0:
+        savings_kwh = round((desktop_kwh + gaming_pc_kwh) * 0.15 + 10.0, 2)
+        savings_rs = round(savings_kwh * UNIT_RATE, 2)
+        recs.append({
+            "appliance": "Computers",
+            "title": "Reduce Standby Power & Enable Sleep Modes",
+            "tips": [
+                "Unplug gaming rigs, monitors, and chargers from the socket when not in use (phantom load).",
+                "Configure systems to automatically enter 'Sleep' or 'Hibernate' after 10 minutes of inactivity.",
+                "Use a smart power strip that shuts off peripheral devices when the primary PC turns off."
+            ],
+            "estimated_saving": savings_rs,
+            "estimated_saving_kwh": savings_kwh
+        })
+
+    # General recommendations if list is empty
+    if not recs:
+        recs.append({
+            "appliance": "General",
+            "title": "Audit Phantom Standby Loads",
+            "tips": [
+                "Unplug chargers and appliances when not in use. Phantom loads account for 5% of your bill.",
+                "Perform a weekly meter check to identify anomalous consumption jumps."
+            ],
+            "estimated_saving": 150.0,
+            "estimated_saving_kwh": 20.0
+        })
+
+    total_savings_kwh = round(sum(r["estimated_saving_kwh"] for r in recs), 2)
+    predicted_units = max(20.0, round(current_units - total_savings_kwh, 2))
+
+    current_bescom = calculate_bescom_bill(current_units)
+    predicted_bescom = calculate_bescom_bill(predicted_units)
+
+    current_bill = current_bescom["total_bill"]
+    predicted_bill = predicted_bescom["total_bill"]
+    savings_rs = round(current_bill - predicted_bill, 2)
+
+    # Efficiency score based on benchmark
+    # benchmark: 100 kWh baseline + 50 kWh per bedroom + 20 kWh per family member
+    benchmark_units = 100 + (bedrooms * 50) + (family_members * 20)
+    if current_units <= benchmark_units:
+        efficiency_score = 90 + int((benchmark_units - current_units) / benchmark_units * 9)
+    else:
+        efficiency_score = 90 - int((current_units - benchmark_units) / benchmark_units * 40)
+    efficiency_score = max(50, min(99, efficiency_score))
+    energy_score = efficiency_score
+
+    # Carbon Footprint
+    carbon_footprint = round(current_units * 0.82, 2)
+    carbon_reduction = round((current_units - predicted_units) * 0.82, 2)
+
+    # Sort appliances to find top consumers
+    sorted_apps = sorted(appliances.items(), key=lambda x: x[1], reverse=True)
+    top_consumers = [
+        {"appliance": item[0].upper().replace("_", " "), "value": round(item[1], 2)}
+        for item in sorted_apps[:3] if item[1] > 0
+    ]
+
+    sync_id = f"vidyut_survey_analysis_{random.getrandbits(32)}"
+    
+    # Save to S3/Mock S3
+    record_data = {
+        "sync_id": sync_id,
+        "type": "Single Household Survey Analysis",
+        "profile": {
+            "fullName": full_name,
+            "mobileNumber": mobile,
+            "houseType": house_type,
+            "familyMembers": family_members,
+            "city": city,
+            "provider": provider,
+            "monthlyBill": monthly_bill,
+            "bedrooms": bedrooms
+        },
+        "appliances_raw": appliances_data,
+        "ev_raw": ev,
+        "usage_raw": usage,
+        "appliances": appliances,
+        "current_units": current_units,
+        "predicted_next_month_units": predicted_units,
+        "current_bill": current_bill,
+        "predicted_next_month_bill": predicted_bill,
+        "estimated_savings": savings_rs,
+        "energy_score": energy_score,
+        "efficiency_score": efficiency_score,
+        "carbon_footprint": carbon_footprint,
+        "carbon_reduction": carbon_reduction,
+        "top_consumers": top_consumers,
+        "current_bill_breakdown": current_bescom,
+        "predicted_bill_breakdown": predicted_bescom,
+        "recommendations": recs
+    }
+
+    saved_record = save_record(record_data)
+    return saved_record
+
+
 @app.post("/api/create-s3-bucket")
 def create_s3_bucket():
     if boto3 is None:
@@ -634,6 +945,8 @@ def get_cloud_records():
     return load_all_records()
 
 
-frontend_path = os.path.join(os.path.dirname(__file__), "../frontend")
+frontend_path = os.path.join(os.path.dirname(__file__), "../frontend/dist")
+if not os.path.exists(frontend_path):
+    frontend_path = os.path.join(os.path.dirname(__file__), "../frontend")
 if os.path.exists(frontend_path):
     app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
