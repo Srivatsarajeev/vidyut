@@ -39,7 +39,7 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Input Data
             </button>
-            <button class="nav-item nav-results-btn" data-page="results" disabled>
+            <button class="nav-item nav-results-btn" data-page="results" style="display: none;" disabled>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 AI Results
                 <span class="nav-badge" id="results-badge" style="display:none">New</span>
@@ -83,20 +83,28 @@
         <!-- ─── PAGE: Welcome ──────────────────────────────────── -->
         <div class="page active" id="page-welcome">
             <div class="welcome-layout">
-                <div class="welcome-hero">
-                    <div class="welcome-pill">AI-Powered · Cloud-Backed · Real Insights</div>
-                    <h1 class="welcome-title">Understand where your<br>energy goes — and why.</h1>
-                    <p class="welcome-desc">Vidyut analyzes appliance consumption across 5 residential properties, forecasts next-month bills with confidence scores, and delivers personalized AI recommendations backed by cloud-stored reports.</p>
-                    <div class="welcome-actions">
-                        <button class="btn-primary btn-lg" id="welcome-start">Start Analysis</button>
-                        <button class="btn-ghost" id="welcome-load-sample">Load sample data first</button>
+                <div class="welcome-hero" style="position: relative;">
+                    <!-- Stylized electric bolt background in yellow -->
+                    <div class="welcome-bolt-bg" style="position: absolute; top: -10%; left: -5%; width: 110%; height: 120%; z-index: 0; pointer-events: none; opacity: 0.15; filter: blur(20px);">
+                        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                            <path d="M55,5 L25,55 L50,55 L45,95 L75,45 L50,45 Z" fill="#eab308"/>
+                        </svg>
+                    </div>
+                    <div style="position: relative; z-index: 1;">
+                        <div class="welcome-pill">AI-Powered · Cloud-Backed · Real Insights</div>
+                        <h1 class="welcome-title">Understand where your<br>energy goes — and why.</h1>
+                        <p class="welcome-desc">Vidyut analyzes appliance consumption across 5 residential houses, forecasts next-month bills with confidence scores, and delivers personalized AI recommendations backed by cloud-stored reports.</p>
+                        <div class="welcome-actions">
+                            <button class="btn-primary btn-lg" id="welcome-start">Start Analysis</button>
+                            <button class="btn-ghost" id="welcome-load-sample">Load sample data first</button>
+                        </div>
                     </div>
                 </div>
                 <div class="welcome-steps">
                     <div class="step-card">
                         <div class="step-number">01</div>
                         <div class="step-title">Enter Data</div>
-                        <div class="step-desc">Input monthly appliance usage (kWh) for each of 5 properties.</div>
+                        <div class="step-desc">Input monthly appliance usage (kWh) for each of 5 houses.</div>
                     </div>
                     <div class="step-connector"></div>
                     <div class="step-card">
@@ -108,7 +116,7 @@
                     <div class="step-card">
                         <div class="step-number">03</div>
                         <div class="step-title">View Results</div>
-                        <div class="step-desc">Per-property reports with savings potential and CO₂ impact.</div>
+                        <div class="step-desc">Per-house reports with savings potential and CO₂ impact.</div>
                     </div>
                     <div class="step-connector"></div>
                     <div class="step-card">
@@ -124,10 +132,10 @@
         <div class="page" id="page-input">
             <div class="page-header">
                 <div>
-                    <h2>Property Data</h2>
-                    <p class="page-sub">Enter monthly appliance consumption in kilowatt-hours (kWh) for all 5 properties.</p>
+                    <h2>House Data</h2>
+                    <p class="page-sub">Enter monthly appliance consumption in kilowatt-hours (kWh) for all 5 houses.</p>
                 </div>
-                <div class="header-actions">
+                <div class="header-actions" id="input-header-actions" style="display: none;">
                     <button class="btn-ghost btn-sm" id="btn-sample">Load Sample</button>
                     <button class="btn-primary" id="btn-analyze">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
@@ -136,16 +144,42 @@
                 </div>
             </div>
 
-            <div class="input-grid" id="input-grid">
-                <!-- Property cards rendered dynamically -->
+            <!-- Bill Upload Section -->
+            <div class="card bill-upload-card" style="margin-bottom: 24px;">
+                <div class="card-head" style="padding: 16px 20px; border-bottom: 1px solid var(--border);">
+                    <span class="card-title">Upload BESCOM Electricity Bill (Required)</span>
+                    <span class="card-sub">Upload an image or PDF of your Bengaluru electricity bill to unlock the house inputs and perform analysis</span>
+                </div>
+                <div class="card-body" style="padding: 20px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; align-items: start;">
+                    <div class="upload-zone" id="upload-zone" style="border: 2px dashed var(--border); padding: 32px 20px; text-align: center; border-radius: var(--r); cursor: pointer; transition: all 0.2s; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-3);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <div>
+                            <span style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-1); margin-bottom: 4px;">Choose a file or drag it here</span>
+                            <span style="display: block; font-size: 0.72rem; color: var(--text-3);">Supports PDF, PNG, JPG (Max 5MB)</span>
+                        </div>
+                        <input type="file" id="bill-file-input" accept="image/*,application/pdf" style="display: none;">
+                    </div>
+                    <div class="bill-result-card" id="bill-result-card" style="display: none; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); padding: 16px;">
+                        <!-- Extracted bill details shown here -->
+                    </div>
+                    <div class="bill-upload-placeholder" id="bill-upload-placeholder" style="border: 1px solid var(--border); border-radius: var(--r); padding: 24px; text-align: center; color: var(--text-3); font-size: 0.82rem; height: 100%; display: flex; align-items: center; justify-content: center;">
+                        Upload a bill to view extracted AI parameters and configure houses
+                    </div>
+                </div>
             </div>
 
-            <div class="input-footer">
-                <div class="input-footer-note">Values are monthly consumption in kWh. Leave 0 if the appliance is not used.</div>
-                <button class="btn-primary" id="btn-analyze-2">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                    Run AI Analysis
-                </button>
+            <div id="house-input-container" style="display: none;">
+                <div class="input-grid" id="input-grid">
+                    <!-- House cards rendered dynamically -->
+                </div>
+
+                <div class="input-footer">
+                    <div class="input-footer-note">Values are monthly consumption in kWh. Leave 0 if the appliance is not used.</div>
+                    <button class="btn-primary" id="btn-analyze-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        Run AI Analysis
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -199,6 +233,11 @@
                 </div>
                 <div class="rsb-divider"></div>
                 <div class="rsb-item">
+                    <span class="rsb-label">Predicted Next Month</span>
+                    <span class="rsb-value" id="r-predicted-bill" style="color: var(--blue);">—</span>
+                </div>
+                <div class="rsb-divider"></div>
+                <div class="rsb-item">
                     <span class="rsb-label">Potential Savings</span>
                     <span class="rsb-value green" id="r-total-savings">—</span>
                 </div>
@@ -219,7 +258,7 @@
 
             <!-- Tabs -->
             <div class="result-tabs">
-                <button class="rtab active" data-rtab="properties">Property Reports</button>
+                <button class="rtab active" data-rtab="properties">House Reports</button>
                 <button class="rtab" data-rtab="summary">Summary & Insights</button>
                 <button class="rtab" data-rtab="charts">Charts</button>
             </div>
@@ -237,11 +276,13 @@
                 <!-- Rankings -->
                 <div class="two-col-grid">
                     <div class="card">
-                        <div class="card-head">
-                            <span class="card-title">Property Rankings</span>
-                            <span class="card-sub">By energy efficiency score</span>
+                        <div class="card-head" style="padding: 16px 20px; border-bottom: 1px solid var(--border);">
+                            <span class="card-title">House Leaderboards</span>
+                            <span class="card-sub">Rankings of all houses across key parameters</span>
                         </div>
-                        <div class="rankings-list" id="rankings-list"></div>
+                        <div class="card-body" id="rankings-container" style="padding: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                            <!-- Four leaderboard sections will be rendered here dynamically -->
+                        </div>
                     </div>
                     <div class="card">
                         <div class="card-head">
@@ -256,32 +297,43 @@
             <!-- Tab: Charts -->
             <div class="rtab-content" id="rtab-charts">
                 <div class="charts-grid">
-                    <div class="card chart-card-full">
-                        <div class="card-head">
-                            <span class="card-title">Appliance Breakdown by Property</span>
-                            <span class="card-sub">Which appliance consumes most in each property?</span>
+                    <div class="two-col-grid" style="margin-bottom: 16px;">
+                        <div class="card chart-card">
+                            <div class="card-head">
+                                <span class="card-title">Appliance Consumption</span>
+                                <span class="card-sub">Aggregate energy usage (kWh) per appliance across all houses</span>
+                            </div>
+                            <div class="chart-wrap">
+                                <canvas id="applianceBarChart"></canvas>
+                            </div>
                         </div>
-                        <div class="chart-wrap-tall">
-                            <canvas id="stackedChart"></canvas>
+                        <div class="card chart-card">
+                            <div class="card-head">
+                                <span class="card-title">House Comparison</span>
+                                <span class="card-sub">Total energy consumption comparison (kWh)</span>
+                            </div>
+                            <div class="chart-wrap">
+                                <canvas id="propertyComparisonChart"></canvas>
+                            </div>
                         </div>
                     </div>
                     <div class="two-col-grid">
                         <div class="card chart-card">
                             <div class="card-head">
-                                <span class="card-title">Current vs Optimized</span>
-                                <span class="card-sub">Savings potential per property</span>
+                                <span class="card-title">Bill Prediction (Current vs Optimized Target)</span>
+                                <span class="card-sub">Comparison of current forecasted bill vs next month predicted bill (₹)</span>
                             </div>
                             <div class="chart-wrap">
-                                <canvas id="savingsChart"></canvas>
+                                <canvas id="billPredictionChart"></canvas>
                             </div>
                         </div>
                         <div class="card chart-card">
                             <div class="card-head">
-                                <span class="card-title">Energy Score Distribution</span>
-                                <span class="card-sub">Efficiency score per property (0–100)</span>
+                                <span class="card-title">Overall Appliance Share</span>
+                                <span class="card-sub">Pie chart representation of energy share by appliance category</span>
                             </div>
                             <div class="chart-wrap">
-                                <canvas id="scoreChart"></canvas>
+                                <canvas id="applianceContributionPieChart"></canvas>
                             </div>
                         </div>
                     </div>
